@@ -1,0 +1,220 @@
+/*
+ * Styling of the application shell (FinApp.view.main.Main).
+ * Rules are namespaced `.piq-*`; see Application.scss for the palette.
+ */
+
+// ---- sidebar ---------------------------------------------------------------------
+
+.piq-sidebar {
+    flex: none;
+    width: 264px;
+    padding: 20px 14px;
+    background: linear-gradient(180deg, #0a1a44 0%, #0e2a6b 100%);
+    color: #ffffff;
+}
+
+.piq-brand {
+    padding: 4px 10px 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+}
+
+.piq-brand-mark {
+    margin-right: 10px;
+    font-size: 22px;
+    color: #4da3ff;
+}
+
+.piq-tagline {
+    padding: 4px 10px 22px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #9fb4e0;
+}
+
+.piq-nav-item {
+    justify-content: flex-start;
+    height: 48px;
+    margin: 3px 0;
+    padding: 0 14px;
+    border-radius: 10px;
+    background: transparent;
+    box-shadow: none;
+    font-size: 15px;
+    color: #c9d6f2;
+
+    .x-text-el,
+    .x-icon-el {
+        color: inherit;
+        text-transform: none;
+        letter-spacing: 0;
+    }
+
+    .x-icon-el {
+        width: 24px;
+        margin-right: 10px;
+    }
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #ffffff;
+    }
+
+    &.x-focused {
+        outline: 2px solid #8ab4ff;
+    }
+
+    &.piq-nav-active {
+        background: #1d4fb8;
+        color: #ffffff;
+    }
+}
+
+// ---- simulation status card (bottom of the sidebar) -----------------------------
+
+.piq-sim-status {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 12px;
+    color: #c9d6f2;
+}
+
+.piq-sim-title {
+    margin-bottom: 4px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    color: #ffffff;
+}
+
+.piq-sim-detail {
+    line-height: 1.5;
+
+    // the status line is coloured; light-on-navy variants for contrast
+    &.piq-ok {
+        color: #6ee7a0;
+    }
+
+    &.piq-err {
+        color: #ff9b9b;
+    }
+
+    &.piq-warn {
+        color: #fcd34d;
+    }
+}
+
+.piq-sim-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: #fcd34d;
+
+    &.piq-ok {
+        background: #34d399;
+    }
+
+    &.piq-err {
+        background: #f87171;
+    }
+}
+
+// ---- header -----------------------------------------------------------------------
+
+.piq-header {
+    flex: none;
+    min-height: 76px;
+    padding: 0 24px;
+    background: #ffffff;
+    border-bottom: 1px solid #e3e9f2;
+}
+
+.piq-demo-badge {
+    padding: 6px 12px;
+    border: 1px solid #f5c26b;
+    border-radius: 999px;
+    background: #fff7e6;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    color: #8a5200;
+    white-space: nowrap;
+}
+
+.piq-last-update {
+    margin-left: 16px;
+    font-size: 13px;
+    color: #5b6b8c;
+    white-space: nowrap;
+}
+
+.piq-disclosure {
+    flex: none;
+    padding: 6px 24px;
+    background: #eef3fb;
+    border-bottom: 1px solid #e3e9f2;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #43557a;
+}
+
+.piq-banner-error {
+    flex: none;
+    padding: 10px 24px;
+    background: #fdecec;
+    border-bottom: 1px solid #f5c2c2;
+    font-size: 14px;
+    color: #8f1d1d;
+}
+
+.piq-screens {
+    background: #f4f7fb;
+}
+
+// ---- tablet / narrow widths: the sidebar collapses to icons ------------------------
+
+@media (max-width: 1000px) {
+    .piq-sidebar {
+        width: 76px;
+        padding: 20px 8px;
+    }
+
+    .piq-brand-text,
+    .piq-tagline,
+    .piq-sim-detail {
+        display: none;
+    }
+
+    .piq-nav-item {
+        padding: 0 12px;
+
+        .x-text-el {
+            display: none;
+        }
+    }
+
+    .piq-header {
+        padding: 0 14px;
+    }
+
+    .piq-disclosure,
+    .piq-banner-error {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .piq-view {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 760px) {
+    .piq-last-update {
+        display: none;
+    }
+}

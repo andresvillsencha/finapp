@@ -51,3 +51,40 @@ All figures in PortfolioIQ are **simulated**. This file records choices made whe
 - Dashboard: KPIs are Portfolio Value, Total Gain/Loss, Daily Change, Invested Cost Basis, Cash Balance; show bottom five as well as top five; add the portfolio summary table; range selector is 1M/3M/6M/1Y/All.
 - Holdings Explorer: add Portfolio and Cost Basis columns and a gain/loss filter and group-by control; drop the "Asset Type" filter; add the transactions view with filters and paging; no real company logos.
 - Analytics: no Risk Analysis tab, risk metrics (volatility, Sharpe, drawdown) or projected scenario returns; pivot shows Market Value, Cost Basis and Unrealized P/L by Sector → Company and Portfolio; add the sector exposure comparison chart; sidebar label is "Dashboard"; use fixture portfolio names ("Global Leaders") and sector names ("Financials").
+
+## Phase 2 — Ext JS Modern foundation
+
+### Audit of the frontend and SDK
+
+| Item | Finding |
+|---|---|
+| Toolkit / version | Ext JS **8.0.0.43**, Modern toolkit, theme `theme-material`, app `FinApp` (namespace `FinApp`), workspace framework path `ext` |
+| Enabled packages | `font-awesome` (FA 7.0.0), `charts`, `ux` (unchanged; `app.json` was **not** modified) |
+| Pivot Grid | **Not installed.** `ext/packages` contains `amf, charts, core, font-awesome, font-ext, font-ios, font-pictos, google, legacy, qr-code, signature, soap, ux`. No `Ext.pivot.*` classes exist. Phase 5 uses the labelled grouped-aggregation fallback ("Pivot Grid requires the applicable Sencha package/license."). |
+| Exporter | **Not installed** (no `Ext.exporter.*` / `GridExporter`). Phase 4/5 use the server CSV export (`/api/exports/holdings.csv`) and a client download of server data. |
+| Template demo | The generated Personnel model/store/list and tab shell were replaced (the four demo files `model/Personnel.js`, `store/Personnel.js`, `view/main/List.js`, `view/main/List.scss` were deleted; nothing else referenced them). |
+
+To enable the real Pivot Grid / Exporter later, the licensed `pivot` and `exporter` packages must be installed in the Sencha workspace and added to `requires` in `ext-js/app.json` (a user-run Sencha Cmd step); the app does not redistribute them.
+
+### Frontend decisions
+
+1. **Namespace** `FinApp.*` (confirmed). "PortfolioIQ" is the product name in UI text only.
+2. **Shell.** `FinApp.view.main.Main` is an `Ext.Container` (hbox): sidebar (brand, three navigation buttons, simulation status card) + body (header with portfolio selector and SIMULATED DATA / DEMO badge, the required disclosure bar, an API error banner with Retry, and a card container with the three screens). The sidebar collapses to icons below 1000px width (CSS media query).
+3. **Routing.** Ext routing in the shell's ViewController: `#dashboard`, `#holdings`, `#analytics`; `Application.defaultToken = 'dashboard'`. Navigation buttons call `redirectTo()` so back/forward and deep links work. No second router.
+4. **Shared state** lives in the shell ViewModel: `portfolioId` (`'all'` or an id, two-way bound to the selector), `apiStatus`, `tickIndex`, `asOf`, `scenarioName`. Screens bind to it through ViewModel inheritance. A global `piqsnapshot` event (Ext.fireEvent) announces each new simulated snapshot for screens that need to refresh.
+5. **Refresh.** `Ext.util.TaskRunner` task polls `/api/simulation/status` (first immediately, then every 5 s or the server's `refresh_interval_ms`). Requests never overlap, failures set an "API unreachable" banner and are retried on the next tick, and the task is destroyed with the view. The browser never computes or invents prices.
+6. **API access.** `FinApp.util.Api` resolves the base URL (default `http://127.0.0.1:3000/api`; override with `?apiBase=` **only** for localhost / 127.0.0.1 / [::1]), wraps `Ext.Ajax`, and normalizes errors (`status, code, message, offline, timedOut`). `FinApp.proxy.Api` (`type: 'piq'`) is the single store proxy: JSON reader on `data/total/success/message`, Ext default `page/start/limit` and JSON `sort`/`filter` (what the server parses), no cache-buster, no `X-Requested-With`, and it reports proxy exceptions through `Ext.fireEvent('piqapierror')` (the shell shows a toast).
+7. **Cross-origin.** The Sencha Cmd dev server (port 1841) calls the API (port 3000), which allows `http://localhost:1841` and `http://127.0.0.1:1841` (`CORS_ORIGINS`). The default base uses `127.0.0.1` rather than `localhost` because Node may bind IPv4 only.
+8. **Foundations only.** `FinApp.model.Portfolio` + `FinApp.store.Portfolios` (selector), `FinApp.util.Format` (USD / signed / percent / UTC time formatting with sign + arrow, never colour alone). Dashboard, holdings and analytics stores come with their screens.
+9. **Placeholders.** The three screens are placeholders (`FinApp.view.shared.PlaceholderView`): they say what the real screen will contain and show a live API connectivity card. They are not mock-ups. Class names follow `CLAUDE.md` section 8 (`DashboardView`, `HoldingsView`, `AnalyticsView`).
+10. **Styling.** Global palette/cards in `app/Application.scss`, shell in `app/view/main/Main.scss`, all rules namespaced `.piq-*`, literal colours (no cross-file Sass variables), no edits to the theme or `ext/`. Navy sidebar, light page background, 12px rounded white cards, amber SIMULATED badge.
+11. **ES5 only.** App classes avoid ES6 syntax so the production (YUI) compressor can build them.
+
+### Mockup deviations applied in the shell (CLAUDE.md wins)
+
+- Sidebar label "Dashboard" (not "Portfolio Dashboard"); no search box, bell or avatar; "Live" is replaced by "SIMULATED MARKET" with the last simulated update; the full disclosure is always visible under the header; no per-portfolio list in the sidebar (the header selector covers it).
+- Date range controls are screen-specific and arrive with the screens (Dashboard: 1M/3M/6M/1Y/All).
+
+### Not verified in Phase 2
+
+Claude cannot run Sencha Cmd, so the app was **not built or opened**. Checks done: every Ext class/config used was verified against the 8.0.0.43 Modern sources, all frontend JS parses (`node --check`), and the pure logic of `FinApp.util.Api` / `FinApp.util.Format` was exercised with a stub. Visual layout and runtime behavior must be confirmed by the user (checklist in the Phase 2 report).

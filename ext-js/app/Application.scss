@@ -1,5 +1,101 @@
 /*
- *  This file can be used to set variables and supply global styling.  View specific 
+ *  This file can be used to set variables and supply global styling.  View specific
  *  styling should be located the view's corresponding scss file.
  */
 $enable-font-awesome: dynamic(true);
+
+/*
+ * PortfolioIQ shared look (all rules are namespaced `.piq-*`, layered on top of the
+ * installed Modern theme without global overrides).
+ *
+ * Palette: navy #0b1f4d / #0e2a6b (navigation, headings), accent blue #1d5fd1,
+ * page background #f4f7fb, white surfaces with #e3e9f2 borders, positive #15803d,
+ * negative #b91c1c. Literal colours are used on purpose so every .scss file is
+ * self-contained.
+ */
+
+.piq-shell {
+    background: #f4f7fb;
+}
+
+// ---- gain / loss and status colours -----------------------------------------
+// Colour is never the only signal: values also carry a sign and an arrow.
+
+.piq-pos,
+.piq-ok {
+    color: #15803d;
+}
+
+.piq-neg,
+.piq-err {
+    color: #b91c1c;
+}
+
+.piq-warn {
+    color: #b45309;
+}
+
+.piq-flat {
+    color: #475569;
+}
+
+// ---- screens ---------------------------------------------------------------------
+
+.piq-view {
+    padding: 24px;
+}
+
+.piq-view-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #0b1f4d;
+}
+
+.piq-view-sub {
+    margin-top: 4px;
+    font-size: 14px;
+    color: #5b6b8c;
+}
+
+// ---- cards -------------------------------------------------------------------------
+
+.piq-card {
+    margin-top: 18px;
+    padding: 18px 20px;
+    background: #ffffff;
+    border: 1px solid #e3e9f2;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(15, 35, 80, 0.06);
+    color: #1e293b;
+}
+
+.piq-card-title {
+    margin-bottom: 10px;
+    font-weight: 700;
+    color: #0b1f4d;
+}
+
+.piq-list {
+    margin: 0;
+    padding-left: 20px;
+    line-height: 1.7;
+    font-size: 14px;
+}
+
+.piq-kv {
+    display: flex;
+    justify-content: space-between;
+    padding: 7px 0;
+    border-bottom: 1px solid #f0f3f8;
+    font-size: 14px;
+
+    span {
+        color: #5b6b8c;
+    }
+
+    b {
+        margin-left: 16px;
+        text-align: right;
+        word-break: break-all;
+    }
+}

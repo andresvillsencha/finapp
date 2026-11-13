@@ -71,7 +71,9 @@ cd ext-js
 sencha app watch
 ```
 
-Open the local URL printed by Sencha Cmd.
+Open the local URL printed by Sencha Cmd (normally `http://localhost:1841`). The app expects the API at `http://127.0.0.1:3000/api`; to use another local port add `?apiBase=http://127.0.0.1:PORT/api` to the page URL (only localhost addresses are accepted). Screens are reachable at `#dashboard`, `#holdings` and `#analytics`.
+
+The Pivot Grid and Exporter packages are not installed in this SDK; the app uses a labelled fallback grid and CSV export instead.
 
 ## Demo data commands (run in `server/`)
 
