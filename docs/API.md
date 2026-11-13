@@ -51,10 +51,17 @@ Error (HTTP 400/404/409/500):
 | GET | `/api/holdings?portfolioId&page&start&limit&sort&filter&group&groupDir&query` | Open positions with derived values; `meta.totals` and `meta.groups` hold server sums |
 | GET | `/api/transactions?portfolioId&page&start&limit&sort&filter` | Transaction history (filters: portfolio, ticker, side, date range) |
 | POST | `/api/transactions` | Execute a simulated BUY/SELL (201) |
-| GET | `/api/analytics/pivot?portfolioId` | Flat position rows: sector, company, portfolio, market value, cost basis, unrealized P/L |
+| GET | `/api/analytics/pivot?portfolioId&layout` | `layout=flat` (default): flat position rows (sector, company, portfolio, market value, cost basis, unrealized P/L). `layout=wide`: one row per company with a column per portfolio and measure; `meta.groups` / `meta.grand` hold server-calculated subtotals and grand total |
 | GET | `/api/analytics/comparison?range` | Normalized series (start = 100): `portfolio_<id>` and `benchmark_<id>` fields; `meta.series` describes them |
 | GET | `/api/analytics/sector-comparison` | One row per sector with `portfolio_<id>` (value) and `portfolio_<id>_pct` fields |
 | GET | `/api/exports/holdings.csv?portfolioId&filter&sort` | CSV of all matching holdings (text cells protected against formula injection) |
+| GET | `/api/exports/pivot.csv?portfolioId&tick` | CSV of the wide pivot: company rows, a subtotal row per sector and a grand total row, all measures per portfolio |
+
+### Wide pivot (`/api/analytics/pivot?layout=wide`)
+
+Row fields: `id, sector, company_id, symbol, company`, then for each portfolio `portfolio_<id>_market_value`, `portfolio_<id>_cost_basis`, `portfolio_<id>_unrealized_pl` (`null` when that portfolio does not hold the company) and `total_market_value`, `total_cost_basis`, `total_unrealized_pl`. `meta.portfolios` lists the columns, `meta.measures` the measures, `meta.groups[sector]` the sector subtotals (same field names plus `count`) and `meta.grand` the grand total (a portfolio without positions is 0). All sums are exact cents.
+
+`GET /api/analytics/comparison` rows carry one numeric field per series (`portfolio_<id>`, `benchmark_<id>`); the first sampled row of every series is 100 and `meta.series` describes the fields.
 
 ### Holdings totals and groups (`meta`)
 
@@ -109,4 +116,4 @@ Response `201`:
 
 ### Error codes
 
-`INVALID_JSON, PAYLOAD_TOO_LARGE, INVALID_TRADE, INVALID_TRADE_TYPE, INVALID_QUANTITY, INVALID_PORTFOLIO_ID, INVALID_COMPANY_ID, INVALID_RANGE, INVALID_PAGING, INVALID_SORTER, INVALID_GROUP, INVALID_FILTER, INVALID_TICK, INVALID_AS_OF, INVALID_SNAPSHOT, TICK_OUT_OF_RANGE, AS_OF_OUT_OF_RANGE` (400); `PORTFOLIO_NOT_FOUND, COMPANY_NOT_FOUND, ROUTE_NOT_FOUND` (404); `INSUFFICIENT_CASH, INSUFFICIENT_SHARES, OUT_OF_ORDER_TRANSACTION, TRADING_DISABLED, PORTFOLIO_NOT_ACTIVE` (409); `PERSISTENCE_FAILED, INTERNAL_ERROR` (500).
+`INVALID_JSON, PAYLOAD_TOO_LARGE, INVALID_TRADE, INVALID_TRADE_TYPE, INVALID_QUANTITY, INVALID_PORTFOLIO_ID, INVALID_COMPANY_ID, INVALID_RANGE, INVALID_PAGING, INVALID_SORTER, INVALID_GROUP, INVALID_LAYOUT, INVALID_FILTER, INVALID_TICK, INVALID_AS_OF, INVALID_SNAPSHOT, TICK_OUT_OF_RANGE, AS_OF_OUT_OF_RANGE` (400); `PORTFOLIO_NOT_FOUND, COMPANY_NOT_FOUND, ROUTE_NOT_FOUND` (404); `INSUFFICIENT_CASH, INSUFFICIENT_SHARES, OUT_OF_ORDER_TRANSACTION, TRADING_DISABLED, PORTFOLIO_NOT_ACTIVE` (409); `PERSISTENCE_FAILED, INTERNAL_ERROR` (500).

@@ -573,3 +573,91 @@ test('holdings: free-text query matches ticker or company; totals and CSV follow
     assert.equal(lines.length - 1, byTicker.json.total, 'CSV rows = matching holdings');
     assert.equal((await s.get(`/holdings?query=zzzzzz`)).json.total, 0);
 });
+
+test('pivot (wide layout): sector subtotals and grand total reconcile with positions, in exact cents', async (t) => {
+    const s = await server(t);
+    const tick = (await s.get('/simulation/status')).json.data.tick_index;
+    const wide = await s.get(`/analytics/pivot?portfolioId=all&layout=wide&tick=${tick}`);
+    assertCollection(wide, 'wide pivot');
+    assert.equal(wide.json.meta.layout, 'wide');
+    assert.equal(wide.json.total, wide.json.data.length);
+    const portfolios = wide.json.meta.portfolios;
+    assert.equal(portfolios.length, 5);
+    assert.deepEqual(wide.json.meta.measures.map((m) => m.key), ['market_value', 'cost_basis', 'unrealized_pl']);
+
+    const flat = (await s.get(`/analytics/pivot?portfolioId=all&tick=${tick}`)).json.data;
+    const sum = (rows, key) => rows.reduce((acc, r) => acc + cents(r[key] || 0), 0);
+    for (const m of ['market_value', 'cost_basis', 'unrealized_pl']) {
+        for (const p of portfolios) {
+            const key = `${p.key}_${m}`;
+            const expected = sum(flat.filter((r) => r.portfolio_id === p.id), m);
+            assert.equal(sum(wide.json.data, key), expected, `${key}: company rows add up to the positions`);
+            assert.equal(cents(wide.json.meta.grand[key]), expected, `${key}: grand total`);
+        }
+        // company total = sum over portfolios; sector subtotal = sum of its companies; grand = sum of sectors
+        for (const row of wide.json.data) {
+            assert.equal(cents(row[`total_${m}`]), portfolios.reduce((a, p) => a + cents(row[`${p.key}_${m}`] || 0), 0));
+        }
+        for (const [sector, g] of Object.entries(wide.json.meta.groups)) {
+            const rows = wide.json.data.filter((r) => r.sector === sector);
+            assert.equal(g.count, rows.length);
+            assert.equal(cents(g[`total_${m}`]), sum(rows, `total_${m}`), `${sector} subtotal (${m})`);
+        }
+        assert.equal(cents(wide.json.meta.grand[`total_${m}`]),
+            Object.values(wide.json.meta.groups).reduce((a, g) => a + cents(g[`total_${m}`]), 0));
+    }
+    assert.equal(cents(wide.json.meta.grand.total_unrealized_pl),
+        cents(wide.json.meta.grand.total_market_value) - cents(wide.json.meta.grand.total_cost_basis));
+    // ordered Sector -> Company; unheld cells are null, not zero
+    const order = wide.json.data.map((r) => `${r.sector}|${r.company}`);
+    assert.deepEqual(order, order.slice().sort((a, b) => a.localeCompare(b)));
+    assert.ok(wide.json.data.some((r) => portfolios.some((p) => r[`${p.key}_market_value`] === null)));
+    // the grand total equals the portfolios' equity market value (same tick)
+    const equity = (await s.get(`/portfolios?tick=${tick}`)).json.data.reduce((a, p) => a + cents(p.market_value), 0);
+    assert.equal(cents(wide.json.meta.grand.total_market_value), equity);
+
+    // scoped to one portfolio: a single column and its own totals
+    const one = await s.get(`/analytics/pivot?portfolioId=1&layout=wide&tick=${tick}`);
+    assert.equal(one.json.meta.portfolios.length, 1);
+    assert.equal(cents(one.json.meta.grand.total_market_value), cents(wide.json.meta.grand.portfolio_1_market_value));
+    // the default (flat) response is unchanged
+    assert.ok(flat.every((r) => 'portfolio_id' in r && !('total_market_value' in r)));
+    assertError(await s.get('/analytics/pivot?layout=sideways'), 400, 'INVALID_LAYOUT');
+});
+
+test('pivot CSV export: subtotals, grand total and portfolio scope', async (t) => {
+    const s = await server(t);
+    const tick = (await s.get('/simulation/status')).json.data.tick_index;
+    const wide = (await s.get(`/analytics/pivot?portfolioId=all&layout=wide&tick=${tick}`)).json;
+    const csv = await s.get(`/exports/pivot.csv?portfolioId=all&tick=${tick}`);
+    assert.equal(csv.status, 200);
+    assert.match(csv.headers.get('content-type'), /text\/csv/);
+    assert.match(csv.headers.get('content-disposition'), /pivot\.csv/);
+    const lines = csv.text.trim().split('\r\n');
+    assert.match(lines[0], /^Sector,Company,Ticker,/);
+    assert.equal(lines[0].split(',').length >= 3 + 5 * 3 + 3, true, 'a column per portfolio and measure plus totals');
+    const sectorCount = Object.keys(wide.meta.groups).length;
+    assert.equal(lines.length - 1, wide.data.length + sectorCount + 1, 'company rows + one subtotal per sector + grand total');
+    assert.ok(lines.some((l) => l.startsWith('Total,Grand total,')));
+    assert.ok(lines.filter((l) => l.includes(',Subtotal - ')).length === sectorCount);
+    const scoped = await s.get(`/exports/pivot.csv?portfolioId=1&tick=${tick}`);
+    assert.ok(!scoped.text.split('\r\n')[0].includes('Balanced Investment'), 'only the selected portfolio has columns');
+    assertError(await s.get('/exports/pivot.csv?portfolioId=99'), 404, 'PORTFOLIO_NOT_FOUND');
+});
+
+test('pivot (wide layout): a portfolio without positions has an empty pivot with zero grand totals', async (t) => {
+    const s = await server(t);
+    const holdings = (await s.get('/holdings?portfolioId=5&limit=100')).json.data;
+    for (const h of holdings) {
+        const r = await s.post('/transactions', { portfolio_id: 5, company_id: h.company_id, trade_type: 'SELL', quantity: h.quantity });
+        assert.equal(r.status, 201);
+    }
+    const res = await s.get('/analytics/pivot?portfolioId=5&layout=wide');
+    assertCollection(res, 'empty pivot');
+    assert.deepEqual([res.json.data, res.json.total, res.json.meta.groups], [[], 0, {}]);
+    assert.equal(res.json.meta.grand.count, 0);
+    assert.equal(res.json.meta.grand.portfolio_5_market_value, 0);
+    assert.equal(res.json.meta.grand.total_unrealized_pl, 0);
+    const csv = await s.get('/exports/pivot.csv?portfolioId=5');
+    assert.equal(csv.text.trim().split('\r\n').length, 2, 'header and grand total only');
+});

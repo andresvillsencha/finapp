@@ -174,3 +174,46 @@ Two layout fixes were applied after the user ran the Dashboard: the KPI cards ar
 ### Not verified in Phase 4
 
 Claude cannot run Sencha Cmd, so the screen was **not built or opened**. Checks done: Ext classes and configs verified against the 8.0.0.43 sources; all frontend JS parses and is ES5; the controller (refresh rules, filters, grouping, selection, trade event, export URL), the view-model formulas and the trade controller were exercised with a stub; and every request the screen builds was sent to the real backend and the responses checked. Grid rendering, group header layout, the Dialog, charts and runtime behavior must be confirmed by the user. Risks to look at first: group headers (custom template reading server sums), the row expander, the filter-bar wrap layout, and the dialog's select fields.
+
+## Phase 5 — Portfolio Analytics
+
+### Pivot Grid and Exporter availability (verified)
+
+The installed SDK (Ext JS 8.0.0.43) contains no `pivot` or `exporter` package (`ext/packages` holds amf, charts, core, font-*, google, legacy, qr-code, signature, soap, ux). Per `CLAUDE.md` the screen therefore uses the **labelled fallback**: a functional grouped aggregation grid with the visible notice "Pivot Grid requires the applicable Sencha package/license.", and the server-side CSV export.
+
+**How to enable the real Pivot Grid and Exporter** (licensed packages, not redistributed here): install the Ext JS Enterprise `pivot` (and `exporter`) packages for the Modern toolkit into the workspace `packages` folder, add `"pivot"` and `"exporter"` to `requires` in `ext-js/app.json`, and rebuild with Sencha Cmd. Then replace the grid in `FinApp.view.analytics.AnalyticsView` with a Modern pivot grid configured with rows Sector → Company, columns Portfolio, and the three measures, fed by `GET /api/analytics/pivot` (flat layout), and swap `onExport` for the exporter plugin. The Sector → Company data, the measures and the totals already come from the API.
+
+### Data mapping
+
+| Element | Source | Notes |
+|---|---|---|
+| Portfolio performance comparison (1M / 3M / 6M / 1Y / All) | `GET /api/analytics/comparison` | Normalized, start of range = 100, for every portfolio and the simulated benchmarks; series built from `meta.series`; benchmarks dashed and switchable |
+| Sector exposure by portfolio | `GET /api/analytics/sector-comparison` | Grouped columns per sector; "% of portfolio" (default, comparable across sizes) or market value; cash excluded (stated) |
+| Pivot fallback grid | `GET /api/analytics/pivot?layout=wide` | Grouped by sector; a column per portfolio for the selected measure plus Total; measure switch (Market Value / Cost Basis / Unrealized P/L) |
+| Sector subtotals (group headers) and grand total | `meta.groups`, `meta.grand` of the wide pivot | Summed by the server in exact cents |
+| CSV export | `GET /api/exports/pivot.csv` | All three measures per portfolio, a subtotal row per sector and a grand total row |
+
+### Backend additions (minimal, tested)
+
+1. **`layout=wide` on `/api/analytics/pivot`**: one row per company with `portfolio_<id>_<measure>` (null when that portfolio does not hold the company) and `total_<measure>`, plus `meta.portfolios`, `meta.measures`, `meta.groups` (sector subtotals) and `meta.grand` (grand total; a portfolio without positions is 0). The default `flat` layout is unchanged. Invalid values are `400 INVALID_LAYOUT`. This was needed because a pivot's subtotals are sums, and the UI must not calculate money.
+2. **`GET /api/exports/pivot.csv?portfolioId&tick`**: the CSV fallback for the pivot export required by `CLAUDE.md` §3.3 (same CSV helper, so text cells are protected against formula injection).
+3. Tests: reconciliation of company rows, sector subtotals, grand total and portfolio totals in exact cents; scope; null versus zero; the empty portfolio; CSV rows and scope (59 backend tests in total).
+
+### Frontend decisions
+
+1. **Scope.** The pivot follows the shared portfolio selector (a single portfolio shows one column). The two charts always compare all portfolios, because comparing is their purpose; the header text says so.
+2. **Measure, sector mode and benchmark toggles only re-render loaded data**; no request is made. The pivot columns, the grand total strip and the group headers are rebuilt from the same response.
+3. **One snapshot per refresh.** Pivot, comparison and sector requests are sent together with the same `tick` and applied together; same refresh rules as the Dashboard (new tick, scope or range, trade, screen shown; coalesced; silent for the same scope; mask on scope change; error banner with Retry).
+4. **Charts are built from the server's meta**, not hard-coded: line series from `meta.series`, bar series from `meta.portfolios`. Series colours come from `FinApp.util.Palette` and match the HTML legends. The index axis is fitted to the visible lines so differences are readable and always contains 100.
+5. **Index values are displayed, not derived.** Tooltips and the legend show the server's index level ("Index 112.4, start = 100"); the browser does not turn it into a return percentage.
+6. **No dimension switching.** A real Pivot Grid lets users rearrange dimensions; the fallback fixes rows to Sector → Company and columns to Portfolio, and only the measure is switchable (stated in the notice).
+
+### Mockup deviations (CLAUDE.md wins)
+
+- Not built (not in the specification): the Overview / Portfolio Comparison / Exposure Analysis / Risk Analysis / Market Scenarios tabs, Key Metrics (annualized return, volatility, Sharpe ratio, maximum drawdown), the Risk & Concentration card, the Market Scenario Simulator with projected returns, the portfolio list in the sidebar and the header date-range dropdown. The user confirmed dropping the risk metrics and scenario projections.
+- The screen is one page with three sections (performance comparison, sector exposure, pivot) instead of tabs. Benchmarks are included (they are core), as simulated dashed lines.
+- The mockup's exposure pivot is a grouped grid with expandable sector rows; here groups are shown with a header per sector (subtotals per portfolio) and a grand total strip. No sector icons or branding.
+
+### Not verified in Phase 5
+
+Claude cannot run Sencha Cmd, so the screen was **not built or opened**. Checks done: Ext classes and configs verified against the 8.0.0.43 sources; all frontend JS parses and is ES5; the controller (refresh rules, columns, series, legends, tooltips, export URL, failure and retry) and the view-model formulas were exercised with a stub; and every request the screen builds was sent to the real backend for 3 scopes and 5 ranges, checking that all series exist and start at 100, that every pivot column exists in the data, and the empty-portfolio case. Rendering, the dynamic columns (`setColumns`), the dynamic chart series (`setSeries`), the group headers and the wrap layout must be confirmed by the user. Risks to look at first: switching the measure (column rebuild and group header refresh), the grouped bar chart with rotated labels, and the benchmark dashed lines.

@@ -42,7 +42,11 @@ Ext.define('FinApp.proxy.Api', {
         rootProperty: 'data',
         totalProperty: 'total',
         successProperty: 'success',
-        messageProperty: 'message'
+        messageProperty: 'message',
+
+        // Keep the last response (reader.rawData) so screens can read the server's `meta`
+        // block (totals, group sums, series descriptions). It is off by default in Ext JS.
+        keepRawData: true
     },
 
     constructor: function () {

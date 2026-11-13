@@ -33,6 +33,7 @@ function buildRouter(ctx) {
 
     router.get('/holdings', holdings.list);
     router.get('/exports/holdings.csv', holdings.exportCsv);
+    router.get('/exports/pivot.csv', analytics.exportPivotCsv);
 
     router.get('/transactions', transactions.list);
     router.post('/transactions', transactions.create);

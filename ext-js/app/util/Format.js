@@ -50,6 +50,25 @@ Ext.define('FinApp.util.Format', {
         return Ext.isNumber(value) ? Ext.util.Format.number(value, '0,000') : this.EMPTY;
     },
 
+    /** Normalized index level: 112.4 -> "112.4" (start of the range = 100). */
+    index: function (value) {
+        return Ext.isNumber(value) ? Ext.util.Format.number(value, '0,000.0') : this.EMPTY;
+    },
+
+    /** A pivot measure: unrealized P/L is signed, the others are plain dollar amounts. */
+    measure: function (key, value) {
+        if (!Ext.isNumber(value)) {
+            return this.EMPTY;
+        }
+
+        return key === 'unrealized_pl' ? this.signedUsd(value) : this.usd(value);
+    },
+
+    /** Gain/loss class for a pivot measure (only unrealized P/L is coloured). */
+    measureCls: function (key, value) {
+        return key === 'unrealized_pl' ? this.pnlCls(value) : '';
+    },
+
     /** Arrow that accompanies a signed value (never colour alone). */
     arrow: function (value) {
         if (!Ext.isNumber(value) || value === 0) {

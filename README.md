@@ -6,7 +6,7 @@ PortfolioIQ is a **demonstration application** for sales demos and technical web
 
 The app has three screens in one shell: **Dashboard**, **Holdings Explorer** and **Portfolio Analytics**.
 
-> **Status:** implementation is phased (see `IMPLEMENTATION_PLAN.md`). The backend (Phase 1), the Ext JS shell (Phase 2), the Dashboard (Phase 3) and the Holdings Explorer with the Trade Simulator (Phase 4, awaiting approval) are implemented; Portfolio Analytics is a placeholder. Sections marked *(planned)* describe behavior that is not built yet. This README is completed in the final phase.
+> **Status:** implementation is phased (see `IMPLEMENTATION_PLAN.md`). The backend (Phase 1), the Ext JS shell (Phase 2), the Dashboard (Phase 3) and the Holdings Explorer with the Trade Simulator (Phase 4) and Portfolio Analytics (Phase 5, awaiting approval) are implemented; the final phase is integration, QA and the complete README. Sections marked *(planned)* describe behavior that is not built yet. This README is completed in the final phase.
 
 ## Technologies
 
@@ -73,7 +73,7 @@ sencha app watch
 
 Open the local URL printed by Sencha Cmd (normally `http://localhost:1841`). The app expects the API at `http://127.0.0.1:3000/api`; to use another local port add `?apiBase=http://127.0.0.1:PORT/api` to the page URL (only localhost addresses are accepted). Screens are reachable at `#dashboard`, `#holdings` and `#analytics`.
 
-The Pivot Grid and Exporter packages are not installed in this SDK; the app uses a labelled fallback grid and CSV export instead.
+The Pivot Grid and Exporter packages are not installed in this SDK; the app uses a labelled fallback grid and server-side CSV export instead. To enable the real packages (licensed, not redistributed): add the Enterprise `pivot` and `exporter` packages for the Modern toolkit to the workspace, list them in `requires` in `ext-js/app.json`, rebuild, and swap the fallback grid for a pivot grid (details in `docs/DECISIONS.md`, Phase 5).
 
 ## Demo data commands (run in `server/`)
 

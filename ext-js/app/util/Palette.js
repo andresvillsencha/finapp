@@ -15,6 +15,13 @@ Ext.define('FinApp.util.Palette', {
         '#f59e0b', '#ef4444', '#14b8a6', '#ec4899', '#64748b'
     ],
 
+    /** Neutral, dashed-line colours for the simulated benchmarks. */
+    benchmarks: ['#475569', '#94a3b8'],
+
+    benchmark: function (index) {
+        return this.benchmarks[index % this.benchmarks.length];
+    },
+
     /** Colour for the n-th slice (wraps around if there are more slices). */
     sector: function (index) {
         return this.sectors[index % this.sectors.length];
