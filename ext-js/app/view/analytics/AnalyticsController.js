@@ -404,7 +404,6 @@ Ext.define('FinApp.view.analytics.AnalyticsController', {
 
         return {
             type: 'line',
-            id: 'cmp-' + key,
             xField: 'ts',
             yField: key,
             title: name,
@@ -485,7 +484,6 @@ Ext.define('FinApp.view.analytics.AnalyticsController', {
 
         chart.setSeries(fields.length === 0 ? [] : [{
             type: 'bar',
-            id: 'sector-' + mode,
             xField: 'sector',
             yField: fields,
             title: titles,

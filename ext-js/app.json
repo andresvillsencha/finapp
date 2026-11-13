@@ -18,7 +18,10 @@
     "requires": [
         "font-awesome",
         "charts",
-        "ux"
+        "ux",
+        "pivot",
+        "pivot-locale",
+        "pivot-d3"
     ],
 
     /**

@@ -32,6 +32,16 @@ Ext.define('FinApp.view.main.MainController', {
     /** Screen order must match the items of the 'screens' card container. */
     screenKeys: ['dashboard', 'holdings', 'analytics'],
 
+    /** Labels of the navigation buttons; at narrow widths only the icon is shown (text becomes a tooltip). */
+    navTexts: {
+        dashboard: 'Dashboard',
+        holdings: 'Holdings Explorer',
+        analytics: 'Portfolio Analytics'
+    },
+
+    /** Window width (px) at or below which the sidebar collapses to icons (matches Main.scss). */
+    collapseWidth: 1000,
+
     navReferences: {
         dashboard: 'navDashboard',
         holdings: 'navHoldings',
@@ -46,6 +56,8 @@ Ext.define('FinApp.view.main.MainController', {
         vm.set('refreshMs', FinApp.util.Api.defaultRefreshMs);
 
         Ext.on('piqapierror', me.onApiError, me);
+        Ext.Viewport.on('resize', me.syncNav, me, { buffer: 150 });
+        me.getView().on('painted', me.syncNav, me, { single: true });
         // A simulated trade changes cash and positions: reload the portfolio totals.
         Ext.on('piqtrade', me.loadPortfolios, me);
 
@@ -64,6 +76,7 @@ Ext.define('FinApp.view.main.MainController', {
 
         Ext.un('piqapierror', me.onApiError, me);
         Ext.un('piqtrade', me.loadPortfolios, me);
+        Ext.Viewport.un('resize', me.syncNav, me);
 
         if (me.runner) {
             me.runner.destroy();
@@ -74,6 +87,30 @@ Ext.define('FinApp.view.main.MainController', {
     },
 
     // ---- navigation / routes -------------------------------------------------
+
+    /**
+     * Narrow windows: the sidebar shows icons only. The button text is cleared (an icon-only
+     * button is laid out and centred by the theme) and kept as tooltip and aria label.
+     */
+    syncNav: function () {
+        var me = this,
+            collapsed = Ext.Viewport.getWidth() <= me.collapseWidth;
+
+        if (me.destroyed || collapsed === me.navCollapsed) {
+            return;
+        }
+
+        me.navCollapsed = collapsed;
+
+        Ext.Object.each(me.navReferences, function (key, ref) {
+            var button = me.lookup(ref);
+
+            if (button) {
+                button.setText(collapsed ? '' : me.navTexts[key]);
+                button.setTooltip(collapsed ? me.navTexts[key] : null);
+            }
+        });
+    },
 
     onNavTap: function (button) {
         this.redirectTo(button.getItemId());

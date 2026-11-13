@@ -74,16 +74,19 @@ Ext.define('FinApp.view.main.Main', {
                 itemId: 'dashboard',
                 reference: 'navDashboard',
                 text: 'Dashboard',
+                ariaLabel: 'Dashboard',
                 iconCls: 'x-fa fa-house'
             }, {
                 itemId: 'holdings',
                 reference: 'navHoldings',
                 text: 'Holdings Explorer',
+                ariaLabel: 'Holdings Explorer',
                 iconCls: 'x-fa fa-layer-group'
             }, {
                 itemId: 'analytics',
                 reference: 'navAnalytics',
                 text: 'Portfolio Analytics',
+                ariaLabel: 'Portfolio Analytics',
                 iconCls: 'x-fa fa-chart-column'
             }]
         }, {
@@ -97,7 +100,7 @@ Ext.define('FinApp.view.main.Main', {
                 data: '{simulationStatus}'
             },
             tpl: [
-                '<div class="piq-sim-title"><span class="piq-sim-dot {stateCls}"></span>SIMULATED MARKET</div>',
+                '<div class="piq-sim-title"><span class="piq-sim-dot {stateCls}"></span><span class="piq-sim-label">SIMULATED MARKET</span></div>',
                 '<div class="piq-sim-detail {stateCls}">{stateText:htmlEncode}</div>',
                 '<div class="piq-sim-detail">{refresh:htmlEncode}</div>',
                 '<div class="piq-sim-detail">Last update<br>{lastUpdate:htmlEncode}</div>'

@@ -45,6 +45,12 @@ Ext.define('FinApp.view.holdings.TradeDialog', {
     title: 'Trade Simulator',
     closable: true,
     closeAction: 'destroy',
+
+    // close() (X tool, Escape, the Cancel handler, a successful trade) just destroys the
+    // dialog. Without this, Ext.Dialog#close "taps" the Cancel button, whose handler calls
+    // close() again: endless recursion and a dialog stuck on "Executing…".
+    dismissHandler: true,
+
     modal: true,
     width: 440,
     maxWidth: '95%',

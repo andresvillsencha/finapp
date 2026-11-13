@@ -217,3 +217,39 @@ The installed SDK (Ext JS 8.0.0.43) contains no `pivot` or `exporter` package (`
 ### Not verified in Phase 5
 
 Claude cannot run Sencha Cmd, so the screen was **not built or opened**. Checks done: Ext classes and configs verified against the 8.0.0.43 sources; all frontend JS parses and is ES5; the controller (refresh rules, columns, series, legends, tooltips, export URL, failure and retry) and the view-model formulas were exercised with a stub; and every request the screen builds was sent to the real backend for 3 scopes and 5 ranges, checking that all series exist and start at 100, that every pivot column exists in the data, and the empty-portfolio case. Rendering, the dynamic columns (`setColumns`), the dynamic chart series (`setSeries`), the group headers and the wrap layout must be confirmed by the user. Risks to look at first: switching the measure (column rebuild and group header refresh), the grouped bar chart with rotated labels, and the benchmark dashed lines.
+
+## Phase 6 — Integration, QA and polish
+
+### How the QA was done
+
+The app was run in the built-in browser against a **throwaway backend** (the current code, a temporary runtime folder, port 3055) so no user data was touched. Every screen was loaded, driven and inspected (view-model state, store contents, console), compared with the API at the same tick, and exercised at desktop and tablet (768 px) widths, with an empty portfolio, a stopped API and a restarted API. A real Buy was made through the dialog, and a page reload confirmed that the trade persisted (the runtime journal is re-read on startup).
+
+### Defects found and fixed
+
+| Defect | Cause | Fix |
+|---|---|---|
+| Trade dialog stuck on "Executing…" after a successful trade, or Cancel overflowed the stack | `Ext.Dialog#close()` "taps" the Cancel button; the Cancel handler called `close()` again | `dismissHandler: true` on `TradeDialog` (close just destroys the dialog) |
+| Server `meta` unavailable everywhere (empty Analytics charts, blank Holdings totals and group sums, Dashboard axis fit skipped) | The JSON reader keeps `rawData` only with `keepRawData: true` | Set once in the shared `FinApp.proxy.Api` reader |
+| Analytics bar colours differed from the legend | The theme palette overrode the series colours | One colour per portfolio via the series `subStyle` |
+| Console flooded with "No such config id" for chart series | `id` is not a series config | Removed |
+| Collapsed (tablet) sidebar showed clipped slivers instead of icons, and a clipped status card and header | CSS hid the button text but the Material button body collapsed to 4 px | The controller clears the nav button text at ≤ 1000 px (icon-only buttons, text kept as tooltip and aria label), the status card shows only its dot, the last-update text hides at ≤ 900 px |
+| Text under the performance chart overlapped the legend | A negative-margin card style was reused | Footnote style |
+| "No holdings match the current filters" shown for a portfolio that simply has no positions | One static message | The message depends on whether filters are active |
+| Pivot showed one row per position and "Export CSV" returned 404 | The API process was older than the code | Not a code defect: restart the API (documented in the README) |
+
+### Verified
+
+- **Same dataset, same snapshot:** Dashboard KPIs equal `GET /api/dashboard` at the same tick; the Analytics pivot value of a position equals the Holdings market value; after a trade the Dashboard cash, the Holdings quantity, the recent-trades list and the pivot all reflect it.
+- **Trade end to end:** dialog prefill, server price in the confirmation, position 217 → 220, trades R-000001 and R-000002 persisted (after a reload cash was exactly the earlier cash minus quantity × server price).
+- **Empty portfolio:** Dashboard (empty-state messages), Holdings (zero totals, empty grid) and Analytics (empty pivot, zero grand totals) all render.
+- **Offline and recovery:** the red banner with Retry and the "API unreachable" status appear; the app recovers by itself when the API returns.
+- **Fixtures protected:** the nine files keep their original modification time and hashes, and the backend tests assert that fixtures are never written; the real `server/data/runtime/` folder stayed empty.
+- **Configuration and secrets:** `.env`, `.env.*` (except `.env.example`), `server/data/runtime/`, `node_modules/` and the SDK folder are ignored; no keys, tokens or passwords exist in source; CORS is an allow-list; the `?apiBase=` override accepts only local hosts.
+
+### Remaining known issues and limitations
+
+- The Ext JS Charts package logs a warning about Sencha's SVG download server for each chart (SDK behavior; chart download is not used).
+- Pivot Grid and Exporter are not installed: labelled fallback grid and server CSV (see Phase 5 for how to enable the real packages).
+- No automated browser test suite; the demo walkthrough in the README is the manual QA script. The backend has 59 automated tests.
+- The visual QA covered desktop and tablet widths; phone widths were not a goal.
+- Watchlists, market events and scenario controls are fixtures without screens (out of scope for the three core screens).

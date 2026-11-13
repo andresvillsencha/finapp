@@ -186,15 +186,22 @@
 
     .piq-brand-text,
     .piq-tagline,
-    .piq-sim-detail {
+    .piq-sim-detail,
+    .piq-sim-label {
         display: none;
     }
 
+    // icon-only buttons (the controller clears their text at this width)
     .piq-nav-item {
-        padding: 0 12px;
+        padding: 0;
+    }
 
-        .x-text-el {
-            display: none;
+    .piq-sim-status {
+        padding: 10px 0;
+        text-align: center;
+
+        .piq-sim-dot {
+            margin-right: 0;
         }
     }
 
@@ -213,7 +220,7 @@
     }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
     .piq-last-update {
         display: none;
     }

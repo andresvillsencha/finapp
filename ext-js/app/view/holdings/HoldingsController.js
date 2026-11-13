@@ -303,6 +303,7 @@ Ext.define('FinApp.view.holdings.HoldingsController', {
                 errorMessage: '',
                 totals: meta ? meta.totals : null
             });
+            me.updateEmptyText();
             me.restoreSelection();
         } else {
             error = FinApp.util.Api.toError(operation && operation.getError() && operation.getError().response);
@@ -319,6 +320,19 @@ Ext.define('FinApp.view.holdings.HoldingsController', {
         if (me.pending) {
             me.pending = false;
             me.refresh();
+        }
+    },
+
+    /** An empty grid says why: filters hide everything, or the portfolio simply has no positions. */
+    updateEmptyText: function () {
+        var me = this,
+            grid = me.lookup('holdingsGrid'),
+            filtered = me.sector !== 'all' || me.gain !== 'all' || !!me.search;
+
+        if (grid) {
+            grid.setEmptyText('<div class="piq-empty">' + (filtered ?
+                'No holdings match the current filters.' :
+                'No open positions in the selected portfolio.') + '</div>');
         }
     },
 
