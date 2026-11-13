@@ -220,7 +220,8 @@
     }
 }
 
-@media (max-width: 900px) {
+// the header (portfolio, auto-refresh, badge) needs the room; the sidebar status card has the time too
+@media (max-width: 1180px) {
     .piq-last-update {
         display: none;
     }

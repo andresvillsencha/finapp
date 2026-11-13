@@ -4,6 +4,9 @@
  *  - portfolioId   the selected portfolio ('all' or a portfolio id). Screens bind
  *                  to it through ViewModel inheritance and re-request their data.
  *  - apiStatus     'connecting' | 'online' | 'offline'
+ *  - refreshChoice how often the app asks the API for the latest simulated tick, in
+ *                  milliseconds (5, 10, 15, 30 or 60 seconds), or 0 when auto-refresh is
+ *                  paused. Chosen with the selector in the header.
  *  - tickIndex / asOf   the latest simulated market snapshot reported by
  *                  GET /api/simulation/status
  *
@@ -31,7 +34,7 @@ Ext.define('FinApp.view.main.MainModel', {
         tickIndex: null,
         asOf: '',
         scenarioName: '',
-        refreshMs: 5000,
+        refreshChoice: 5000,
         portfolioCount: 0
     },
 
@@ -52,7 +55,7 @@ Ext.define('FinApp.view.main.MainModel', {
 
             return 'Last simulated update: <b>' +
                 Ext.String.htmlEncode(asOf ? FinApp.util.Format.utcDateTime(asOf) : FinApp.util.Format.EMPTY) +
-                '</b>';
+                '</b>' + (get('refreshChoice') === 0 ? ' <span class="piq-warn">(paused)</span>' : '');
         },
 
         offlineHtml: function (get) {
@@ -69,7 +72,9 @@ Ext.define('FinApp.view.main.MainModel', {
                 stateText: status === 'online' ? 'Connected' :
                     (status === 'offline' ? 'API unreachable' : 'Connecting…'),
                 stateCls: status === 'online' ? 'piq-ok' : (status === 'offline' ? 'piq-err' : 'piq-warn'),
-                refresh: 'Refresh every ' + Math.round(get('refreshMs') / 1000) + 's',
+                refresh: get('refreshChoice') === 0 ?
+                    'Auto-refresh paused' :
+                    'Refresh every ' + Math.round(get('refreshChoice') / 1000) + 's',
                 lastUpdate: asOf ? FinApp.util.Format.utcDateTime(asOf) : FinApp.util.Format.EMPTY
             };
         },

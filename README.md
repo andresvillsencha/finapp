@@ -88,7 +88,7 @@ To point the app at another local API port, add `?apiBase=http://127.0.0.1:PORT/
 | `simulation_speed` | `1` | Simulated time per real time (a tick is one simulated step) |
 | `default_scenario_id` | `normal` | Market scenario used when none is set |
 
-The UI refreshes every `refresh_interval_ms` (5000) from `app-settings.json`, aligned with the ticks. Page sizes, trading rules (no margin, no short selling, whole shares, zero fee) and the disclaimer are in the same fixtures.
+`refresh_interval_ms` (5000) in `app-settings.json` is the default auto-refresh rate of the UI, aligned with the ticks; the user can change it in the header (see below). Page sizes, trading rules (no margin, no short selling, whole shares, zero fee) and the disclaimer are in the same fixtures.
 
 ### Fixture paths
 
@@ -125,7 +125,7 @@ cd ext-js
 sencha app watch   # builds the Ext JS app and serves it with live rebuilds
 ```
 
-The app polls `GET /api/simulation/status` every 5 seconds. Each screen then reloads only what changed for the new tick: the Holdings grid keeps its page, sort, filters, grouping, selection and scroll position.
+The app polls `GET /api/simulation/status` and each screen reloads when a poll reports a new tick. The **Auto-refresh** selector in the header sets the rate (every 5, 10, 15, 30 or 60 seconds, or **Paused**), the round icon next to it is **Refresh now** (one poll, also while paused), and the choice is remembered in the browser. While paused, prices stay frozen at the last snapshot, but a trade still updates every screen immediately. Each screen reloads only what changed for the new tick: the Holdings grid keeps its page, sort, filters, grouping, selection and scroll position.
 
 ## Tests and checks
 
@@ -189,7 +189,7 @@ curl -X POST http://127.0.0.1:3000/api/transactions \
 
 About 5–8 minutes. Start both servers and open the app.
 
-1. **Dashboard.** Point out the *SIMULATED DATA / DEMO* badge and the *Last simulated update* time that advances every 5 seconds. Pick **Technology Growth** in the header selector: the KPI cards, chart, donut and tables all follow. Explain that "Daily Change" is an indicative price change since the start of the UTC day.
+1. **Dashboard.** Point out the *SIMULATED DATA / DEMO* badge and the *Last simulated update* time that advances with the auto-refresh rate (5 seconds by default; try the header selector, or pause it to freeze the screen while you explain a number). Pick **Technology Growth** in the header selector: the KPI cards, chart, donut and tables all follow. Explain that "Daily Change" is an indicative price change since the start of the UTC day.
 2. **Range and allocation.** Switch the chart range (1M … All) and hover the chart and the donut for tooltips.
 3. **Holdings Explorer.** Filter to **Technology** (or search "bank"), sort by a column, and group **By sector**: the group headers show server-calculated totals. Select a position to open the detail panel (company, simulated price chart, position summary, recent trades).
 4. **Trade Simulator.** Click **Buy** (or **Buy More**), enter a quantity, execute. Show the confirmation with the server's price, the updated position, and (on the Transactions tab) the new trade. Try selling more shares than owned to see the rejection.

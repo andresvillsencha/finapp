@@ -288,3 +288,15 @@ All pivot checks were made in the running app against a throwaway backend: class
 ### Not verified
 
 A production build (`sencha app build`) was not run (Sencha Cmd is not available to Claude). Excel downloads were not opened in Excel. Dragging fields in the Configurator and applying a new layout (the panel opens and lists the fields) was not exercised end to end.
+
+## Auto-refresh control (header selector)
+
+Requested after Phase 6: choose how often the app refreshes, and pause it.
+
+- **Where:** an **Auto-refresh** selector in the top header next to the portfolio selector (so it is still visible when the sidebar collapses on tablets), plus a **Refresh now** icon button. Options: every 5, 10, 15, 30 or 60 seconds, or **Paused**.
+- **What it controls:** how often the shell polls `GET /api/simulation/status` (an `Ext.util.TaskRunner` task). Every screen already reloads on the shell's `piqsnapshot` event, so the choice sets how often all screens update; the simulated market itself still ticks every 5 seconds on the server (`tick_duration_ms`), so a slower rate just shows a newer tick less often.
+- **Pause:** stops the task. Prices and the "Last simulated update" time freeze (the header and the sidebar card say so). Navigation, filters, sorting, paging and the Holdings grid keep working on the frozen snapshot. **Refresh now** polls once, also while paused. A trade still refreshes every screen at once (the trade event carries the trade's own tick), and the cash and portfolio totals reload. While paused the app does not notice an API outage until the next manual refresh or Retry.
+- **Changes poll immediately:** choosing a faster rate or resuming polls at once (a `TaskRunner` task waits a full interval before its first run).
+- **Remembered per browser:** the choice is kept in `localStorage` (key `piq.refreshMs`, validated on read; blocked storage falls back to the default). It is a per-viewer convenience, not application state.
+- **Server suggestion:** until the user chooses, the shell still follows `refresh_interval_ms` from the server when it is one of the offered rates; a chosen rate or pause always wins.
+- **Verified** in the running app against a throwaway backend: 15 s gave polls exactly 15 s apart; pause gave zero requests in 30 s and froze the tick; Refresh now polled once and reloaded the Dashboard while staying paused; resuming at 10 s polled at once and then every 10 s; starting paused loaded data once and stayed frozen; a trade while paused updated the Dashboard; the dropdown works by mouse; the header fits at desktop and tablet widths. A stub test covers the stored-choice validation, rate changes, pause and resume, Refresh now, server-suggestion precedence and the status texts.

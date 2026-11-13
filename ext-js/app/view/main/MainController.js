@@ -4,10 +4,12 @@
  *  - Routing: #dashboard, #holdings and #analytics select the screen (the
  *    Application's defaultToken opens #dashboard). Navigation buttons only change
  *    the hash, so browser back/forward and deep links work.
- *  - Refresh: polls GET /api/simulation/status with an Ext.util.TaskRunner task
- *    (default every 5 seconds, then the cadence the server reports). Requests never
- *    pile up, failures are shown and retried, and the task is stopped when the
- *    view is destroyed.
+ *  - Refresh: polls GET /api/simulation/status with an Ext.util.TaskRunner task. The user
+ *    picks the rate in the header (5, 10, 15, 30 or 60 seconds) or pauses auto-refresh; the
+ *    choice is remembered in the browser. "Refresh now" polls once, also while paused. Requests
+ *    never pile up, failures are shown, and the task is stopped when the view is destroyed.
+ *    Screens reload when a poll reports a new tick (piqsnapshot), so the choice sets how often
+ *    every screen updates; trades always refresh the screens immediately.
  *  - Portfolio selector: filled from GET /api/portfolios.
  *
  * The browser never invents or calculates market data.
@@ -39,6 +41,12 @@ Ext.define('FinApp.view.main.MainController', {
         analytics: 'Portfolio Analytics'
     },
 
+    /** Auto-refresh rates the user can choose, in milliseconds; 0 (in the view model) means paused. */
+    refreshRates: [5000, 10000, 15000, 30000, 60000],
+
+    /** Browser storage key of the remembered choice (a per-viewer convenience only). */
+    refreshStorageKey: 'piq.refreshMs',
+
     /** Window width (px) at or below which the sidebar collapses to icons (matches Main.scss). */
     collapseWidth: 1000,
 
@@ -53,7 +61,6 @@ Ext.define('FinApp.view.main.MainController', {
             vm = me.getViewModel();
 
         vm.set('apiBase', FinApp.util.Api.getBaseUrl());
-        vm.set('refreshMs', FinApp.util.Api.defaultRefreshMs);
 
         Ext.on('piqapierror', me.onApiError, me);
         Ext.Viewport.on('resize', me.syncNav, me, { buffer: 150 });
@@ -61,14 +68,25 @@ Ext.define('FinApp.view.main.MainController', {
         // A simulated trade changes cash and positions: reload the portfolio totals.
         Ext.on('piqtrade', me.loadPortfolios, me);
 
-        // The task fires immediately, then every `interval` ms.
+        // Remembered choice (5-60 s, or 0 = paused); otherwise the default rate.
+        me.storedChoice = me.readRefreshChoice();
+        me.refreshChoice = me.storedChoice === null ? FinApp.util.Api.defaultRefreshMs : me.storedChoice;
+        vm.set('refreshChoice', me.refreshChoice);
+
         me.runner = new Ext.util.TaskRunner();
         me.pollTask = me.runner.newTask({
             run: me.pollStatus,
             scope: me,
-            interval: FinApp.util.Api.defaultRefreshMs
+            interval: me.refreshChoice || FinApp.util.Api.defaultRefreshMs
         });
-        me.pollTask.start();
+
+        // The first status is always fetched at once (also when paused, so there is data to show).
+        me.pollStatus();
+        if (me.refreshChoice > 0) {
+            me.pollTask.start();
+        }
+
+        vm.bind('{refreshChoice}', me.onRefreshChoice, me);
     },
 
     destroy: function () {
@@ -150,6 +168,59 @@ Ext.define('FinApp.view.main.MainController', {
 
     // ---- simulation status polling -------------------------------------------
 
+    /** The remembered auto-refresh choice, or null when none (or an invalid one) is stored. */
+    readRefreshChoice: function () {
+        var me = this,
+            value = null;
+
+        try {
+            value = window.localStorage.getItem(me.refreshStorageKey);
+        } catch (e) {
+            return null;    // storage blocked: the default applies
+        }
+
+        value = value === null ? null : parseInt(value, 10);
+
+        return (value === 0 || Ext.Array.contains(me.refreshRates, value)) ? value : null;
+    },
+
+    saveRefreshChoice: function (value) {
+        try {
+            window.localStorage.setItem(this.refreshStorageKey, String(value));
+        } catch (e) {
+            // storage blocked: the choice simply is not remembered
+        }
+    },
+
+    /**
+     * The header selector changed: 0 pauses the polling, any other value polls at that rate
+     * (and polls once right away, so a faster rate or a resume shows fresh data immediately).
+     */
+    onRefreshChoice: function (value) {
+        var me = this;
+
+        if (me.destroyed || !Ext.isNumber(value) || value === me.refreshChoice ||
+            (value !== 0 && !Ext.Array.contains(me.refreshRates, value))) {
+            return;
+        }
+
+        me.refreshChoice = value;
+        me.storedChoice = value;
+        me.saveRefreshChoice(value);
+
+        if (value === 0) {
+            me.pollTask.stop();
+        } else {
+            me.pollTask.restart(value);
+            me.pollStatus();
+        }
+    },
+
+    /** "Refresh now": one poll, also while auto-refresh is paused. */
+    onRefreshNow: function () {
+        this.pollStatus();
+    },
+
     pollStatus: function () {
         var me = this;
 
@@ -175,7 +246,7 @@ Ext.define('FinApp.view.main.MainController', {
         var me = this,
             vm = me.getViewModel(),
             wasOnline = vm.get('apiStatus') === 'online',
-            refreshMs = status.refresh_interval_ms;
+            serverMs = status.refresh_interval_ms;
 
         if (me.destroyed) {
             return;
@@ -189,10 +260,13 @@ Ext.define('FinApp.view.main.MainController', {
             scenarioName: status.scenario_name
         });
 
-        // Follow the cadence the server asks for.
-        if (Ext.isNumber(refreshMs) && refreshMs >= 1000 && refreshMs !== vm.get('refreshMs')) {
-            vm.set('refreshMs', refreshMs);
-            me.pollTask.restart(refreshMs);
+        // Until the user chooses a rate, follow the server's suggested cadence when it is one of
+        // the offered rates. A chosen rate (or pause) always wins.
+        if (me.storedChoice === null && Ext.Array.contains(me.refreshRates, serverMs) &&
+            serverMs !== me.refreshChoice) {
+            me.refreshChoice = serverMs;
+            vm.set('refreshChoice', serverMs);
+            me.pollTask.restart(serverMs);
         }
 
         // Screens listen for a new simulated tick with Ext.on('piqsnapshot', ...).

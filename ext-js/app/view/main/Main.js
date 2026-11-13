@@ -129,7 +129,7 @@ Ext.define('FinApp.view.main.Main', {
                 cls: 'piq-portfolio-select',
                 label: 'Portfolio',
                 labelAlign: 'top',
-                width: 280,
+                width: 230,
                 editable: false,
                 forceSelection: true,
                 options: [{
@@ -137,6 +137,34 @@ Ext.define('FinApp.view.main.Main', {
                     value: 'all'
                 }],
                 bind: '{portfolioId}'
+            }, {
+                // how often the app asks the API for the latest simulated tick (or paused)
+                xtype: 'selectfield',
+                reference: 'refreshSelect',
+                cls: 'piq-refresh-select',
+                label: 'Auto-refresh',
+                labelAlign: 'top',
+                width: 150,
+                margin: '0 0 0 16',
+                editable: false,
+                forceSelection: true,
+                options: [
+                    { text: 'Every 5 seconds', value: 5000 },
+                    { text: 'Every 10 seconds', value: 10000 },
+                    { text: 'Every 15 seconds', value: 15000 },
+                    { text: 'Every 30 seconds', value: 30000 },
+                    { text: 'Every 60 seconds', value: 60000 },
+                    { text: 'Paused', value: 0 }
+                ],
+                bind: '{refreshChoice}'
+            }, {
+                xtype: 'button',
+                cls: 'piq-refresh-now',
+                iconCls: 'x-fa fa-arrows-rotate',
+                margin: '18 0 0 8',
+                tooltip: 'Refresh now',
+                ariaLabel: 'Refresh now',
+                handler: 'onRefreshNow'
             }, {
                 xtype: 'component',
                 flex: 1
