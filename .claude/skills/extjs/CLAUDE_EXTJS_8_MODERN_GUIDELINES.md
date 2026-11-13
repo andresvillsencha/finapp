@@ -6,7 +6,7 @@
 
 ## Project location and instruction loading
 
-This guide lives at `.claude/skills/extjs/CLAUDE_EXTJS_8_MODERN_GUIDELINES.md`. Read root `CLAUDE.md` before implementation. Frontend app-owned source is under `ext-js/`; the SDK's `ext/` folder is read-only. The frontend must obtain all demo financial data from the Node.js REST API, never directly from `server/data/fixtures/`. The backend fixtures are in `server/data/fixtures/*.json`. This guide is linked by its `SKILL.md` entrypoint and explicitly referenced in the root `CLAUDE.md`.
+This guide lives at `.claude/skills/extjs/CLAUDE_EXTJS_8_MODERN_GUIDELINES.md`. Read root `CLAUDE.md` before implementation. Frontend app-owned source is under `ext-js/`; the SDK's `ext/` folder is read-only. **Namespace:** the application is named **FinApp** and all app classes use the `FinApp.*` namespace (configured in `app.json`). Never rename it or add a `PortfolioIQ.*` namespace; "PortfolioIQ" is only the product name in UI text. The frontend must obtain all demo financial data from the Node.js REST API, never directly from `server/data/fixtures/`. The backend fixtures are in `server/data/fixtures/*.json`. This guide is linked by its `SKILL.md` entrypoint and explicitly referenced in the root `CLAUDE.md`.
 
 ## 0. Non-negotiable agent permissions and prohibitions
 
@@ -59,7 +59,7 @@ Create a brief implementation plan and identify **verified** classes/configs bef
 
 ## 3. Toolkit-specific application architecture
 
-- Create app classes under the existing namespace, e.g. `PortfolioIQ.view.dashboard.Dashboard`, `PortfolioIQ.view.holdings.Holdings`, `PortfolioIQ.store.Holdings`, `PortfolioIQ.model.Holding`.
+- Create app classes under the existing namespace, using the names from root `CLAUDE.md` §8: `FinApp.view.main.Main`, `FinApp.view.dashboard.DashboardView`, `FinApp.view.holdings.HoldingsView`, `FinApp.view.holdings.TradeDialog`, `FinApp.view.analytics.AnalyticsView`, with matching controllers, ViewModels, stores (`FinApp.store.HoldingsStore`, alias `store.holdings`) and models.
 - Use `Ext.define()` and declarative component configurations. One public class per file; filename/path must match namespace and loader conventions.
 - For major views, create **View + ViewController + ViewModel** as appropriate; avoid enormous view classes with all behavior inline.
 - `Ext.app.Application` owns global startup and navigation shell; views own presentation; ViewControllers own event handling; ViewModels own local state, formulas and store bindings; services own cross-view API or transformation logic only when justified.
@@ -72,13 +72,13 @@ Create a brief implementation plan and identify **verified** classes/configs bef
 ### Example: Modern view with controller and bound store
 
 ```javascript
-Ext.define('PortfolioIQ.view.holdings.Holdings', {
+Ext.define('FinApp.view.holdings.HoldingsView', {
     extend: 'Ext.grid.Grid',
-    xtype: 'holdingsview',
+    xtype: 'holdings-view',
 
     requires: [
-        'PortfolioIQ.view.holdings.HoldingsController',
-        'PortfolioIQ.view.holdings.HoldingsModel'
+        'FinApp.view.holdings.HoldingsController',
+        'FinApp.view.holdings.HoldingsModel'
     ],
 
     controller: 'holdings',
@@ -96,11 +96,11 @@ Ext.define('PortfolioIQ.view.holdings.Holdings', {
 ```
 
 ```javascript
-Ext.define('PortfolioIQ.view.holdings.HoldingsModel', {
+Ext.define('FinApp.view.holdings.HoldingsModel', {
     extend: 'Ext.app.ViewModel',
     alias: 'viewmodel.holdings',
     stores: {
-        holdings: { type: 'holdings-store', autoLoad: true }
+        holdings: { type: 'holdings', autoLoad: true }
     }
 });
 ```
@@ -118,22 +118,25 @@ The Node.js backend returns **standard JSON envelopes**. Collection responses:
     {"id": 1, "symbol": "AAPL", "company": "Apple Inc.", "price": 245.50}
   ],
   "total": 1,
-  "as_of": "2026-11-13T13:00:00.000Z",
-  "simulation_tick": 180
+  "meta": {
+    "asOf": "2026-11-13T13:00:00.000Z",
+    "tickIndex": 180,
+    "simulationMode": "DEMO"
+  }
 }
 ```
 
 - `data` is an array for grid/store endpoints; `total` is the **number of matching records before paging**, not the length of the current page.
-- Single-object endpoints use `{ "success": true, "data": { ... } }`.
-- Errors use appropriate HTTP statuses and `{ "success": false, "message": "...", "code": "..." }`.
-- `as_of` and `simulation_tick` are optional metadata that help correlate simultaneous queries; all requests for the same snapshot must agree.
+- Single-object endpoints use `{ "success": true, "data": { ... }, "meta": { ... } }`.
+- Errors use non-2xx HTTP statuses and `{ "success": false, "message": "...", "code": "...", "error": { "code": "...", "message": "..." } }`. Read `message` for user feedback; use `code` for programmatic handling.
+- `meta.asOf` and `meta.tickIndex` correlate simultaneous queries; all requests for the same snapshot must agree. `meta` never replaces top-level `total`.
 
 ### Canonical Store example
 
 ```javascript
-Ext.define('PortfolioIQ.store.CompanyStore', {
+Ext.define('FinApp.store.CompanyStore', {
     extend: 'Ext.data.Store',
-    alias: 'store.companies-store',
+    alias: 'store.companies',
 
     fields: [
         { name: 'id', type: 'int' },
@@ -186,7 +189,7 @@ Ext.define('PortfolioIQ.store.CompanyStore', {
 ### Charts (package already active)
 
 - Prefer `Ext.chart.CartesianChart` / `Ext.chart.PolarChart` and Modern-supported series, axes, legend and interactions as appropriate, with a Store as the source.
-- Design charts with clear labels, accessible contrasting colors, sensible units, and responsive sizing. Show the shared `as_of` snapshot timestamp.
+- Design charts with clear labels, accessible contrasting colors, sensible units, and responsive sizing. Show the shared `meta.asOf` snapshot timestamp.
 - Chart data should originate from Node API responses, not unrelated frontend-generated random values.
 - Verify exact xtypes, series axes/fields, and animation configuration against Modern 8 documentation before use.
 
@@ -213,13 +216,13 @@ Ext.define('PortfolioIQ.store.CompanyStore', {
 - Node is the **sole authority** for simulated prices and portfolio calculations; client refreshes REST endpoints at a configurable cadence (default 5 seconds).
 - Use a **documented Ext JS task API** (e.g. `Ext.TaskManager` / `Ext.util.TaskRunner` if available) attached to a view/controller lifecycle. Stop tasks on destroy/deactivate as appropriate.
 - Prevent requests from piling up: do not trigger a new load while the prior load is pending; handle network failures and retries.
-- Share or request one `simulation_tick` / `as_of` snapshot where simultaneous dashboard, holdings and charts must reconcile. Backend should accept a validated snapshot/tick parameter if required by the product spec.
+- Poll `/api/simulation/status` (or the agreed schedule) and share one `tickIndex` / `asOf` snapshot where simultaneous dashboard, holdings and charts must reconcile. Display `Last simulated update: <asOf>` and `SIMULATED MARKET`; never "LIVE". Backend should accept a validated snapshot/tick parameter if required by the product spec.
 - Preserve selection, grid scroll position and current filters on refresh where supported; avoid recreating the entire grid every tick.
 - Provide optional pause/resume display refresh. Pausing must not silently alter the backend's time semantics.
 
 ## 7. Styling, formats, accessibility and performance
 
-- Prefer a shared application class namespace for CSS/SCSS (`pi-...`) and supported Modern theme variables/mixins; **never edit framework theme sources inside `ext/`**.
+- Prefer a shared application class namespace for CSS/SCSS (`piq-...`, matching root `CLAUDE.md` §9) and supported Modern theme variables/mixins; **never edit framework theme sources inside `ext/`**.
 - Design polished, consistent cards, spacing, header typography, grid density and states for dark/light settings if project scope requires them.
 - Use responsive containers, not fixed-height layouts that truncate at tablet width.
 - Use built-in Format/Date utilities. Format USD values consistently and show clear negative/positive direction; never use red/green as the *only* signal.
@@ -236,19 +239,22 @@ app/
   Application.js
   model/Company.js
   model/Holding.js
+  model/Transaction.js
   store/CompanyStore.js
   store/HoldingsStore.js
-  service/ApiService.js
+  store/TransactionsStore.js
+  service/ApiService.js          # only if justified
   view/main/Main.js
   view/main/MainController.js
   view/main/MainModel.js
-  view/dashboard/Dashboard.js
+  view/dashboard/DashboardView.js
   view/dashboard/DashboardController.js
   view/dashboard/DashboardModel.js
-  view/holdings/Holdings.js
+  view/holdings/HoldingsView.js
   view/holdings/HoldingsController.js
   view/holdings/HoldingsModel.js
-  view/analytics/Analytics.js
+  view/holdings/TradeDialog.js
+  view/analytics/AnalyticsView.js
   view/analytics/AnalyticsController.js
   view/analytics/AnalyticsModel.js
 resources/

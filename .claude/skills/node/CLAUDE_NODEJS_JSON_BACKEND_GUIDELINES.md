@@ -7,7 +7,7 @@
 
 ## Project location and instruction loading
 
-This guide lives at `.claude/skills/node/CLAUDE_NODEJS_JSON_BACKEND_GUIDELINES.md`; read root `CLAUDE.md` first. **`server/data/fixtures/` is the authoritative immutable fixture directory:** nine already existing `.json` files. Read them through safe paths resolved from the repository root, not from `process.cwd()`. Use `server/data/runtime/` only for mutable state (transactions and optional simulator state); never copy, move or automatically overwrite `server/data/fixtures/` fixtures. `server/data/fixtures/transactions.json` is the baseline journal; avoid a competing initial holdings source. The `server/data/fixtures/` directory is not a SQL database.
+This guide lives at `.claude/skills/node/CLAUDE_NODEJS_JSON_BACKEND_GUIDELINES.md`; read root `CLAUDE.md` first. **`server/data/fixtures/` is the authoritative immutable fixture directory:** nine already existing `.json` files. Read them through paths derived from the backend module location (e.g. `path.resolve(__dirname, '../../data/fixtures')` from `server/src/repositories/`), never from `process.cwd()`. Use `server/data/runtime/` only for mutable state (transactions and optional simulator state); never copy, move or automatically overwrite `server/data/fixtures/` fixtures. `server/data/fixtures/transactions.json` is the baseline journal; avoid a competing initial holdings source. The `server/data/fixtures/` directory is not a SQL database.
 
 ## 0. Non-negotiable agent permissions and prohibitions
 
@@ -38,48 +38,35 @@ Then produce a short, ordered plan and explicitly list prerequisites that only t
 
 Use one Express server and layered modules; adapt to existing patterns rather than reorganizing working code.
 
+Source code lives under `server/src/` (root `CLAUDE.md` is authoritative for this layout):
+
 ```text
 server/
-  app.js                    # Express app + middleware + route registration
-  index.js                  # Start listener (or existing server entry)
-  routes/
-    companyRoutes.js
-    portfolioRoutes.js
-    holdingsRoutes.js
-    transactionRoutes.js
-    analyticsRoutes.js
-    simulationRoutes.js
-  controllers/
-    companyController.js
-    portfolioController.js
-    transactionController.js
-  services/
-    marketSimulationService.js
-    portfolioService.js
-    analyticsService.js
-    transactionService.js
-  repositories/
-    jsonRepository.js
-  middleware/
-    errorHandler.js
-    validateQuery.js
+  src/
+    app.js                  # Express app + middleware + route registration
+    index.js                # Start listener
+    routes/                 # companyRoutes, portfolioRoutes, holdingsRoutes,
+                            # transactionRoutes, analyticsRoutes, simulationRoutes,
+                            # exportRoutes, healthRoutes
+    controllers/            # thin HTTP handlers only
+    services/               # marketSimulator, portfolioService, analyticsService,
+                            # transactionService (all domain math lives here)
+    repositories/           # jsonRepository (fixtures read-only, runtime journal)
+    middleware/             # errorHandler, validateQuery
+    utils/                  # apiResponse, clock, seededRandom, money (integer cents)
+  scripts/                  # demo-seed, demo-reset, demo-verify (run by the user)
+  tests/                    # simulation, portfolio, api tests (node:test)
   data/
-    runtime/                  # Mutable demo-only journal; do not commit
+    fixtures/               # Nine immutable files; never written by the app
+    runtime/                # Mutable demo-only journal; not tracked by Git
       transactions.json
-      simulation-state.json   # Optional
-  utils/
-    apiResponse.js
-    clock.js
-    seededRandom.js
-  tests/
-    simulation.test.js
-    portfolio.test.js
-    api.test.js
+      state.json            # Optional
   .env.example
+  package.json
   README.md
 ```
 
-All nine seed JSON files are in `data/fixtures/` relative to `server/`, including `companies.json`, `portfolios.json`, `transactions.json`, `market-config.json`, `watchlists.json`, `market-events.json`, `market-scenarios.json`, `benchmarks.json`, and `app-settings.json`. Seed fixtures and mutable runtime state are **separate**. Do not persist thousands of generated price rows. Generate them from a deterministic function of seed and time.
+All nine seed JSON files are in `server/data/fixtures/`, including `companies.json`, `portfolios.json`, `transactions.json`, `market-config.json`, `watchlists.json`, `market-events.json`, `market-scenarios.json`, `benchmarks.json`, and `app-settings.json`. Seed fixtures and mutable runtime state are **separate**. Do not persist thousands of generated price rows. Generate them from a deterministic function of seed and time.
 
 ## 3. Canonical REST contract for Sencha Ext JS Modern
 
@@ -99,8 +86,11 @@ All nine seed JSON files are in `data/fixtures/` relative to `server/`, includin
     }
   ],
   "total": 1,
-  "as_of": "2026-11-13T13:00:00.000Z",
-  "simulation_tick": 180
+  "meta": {
+    "asOf": "2026-11-13T13:00:00.000Z",
+    "tickIndex": 180,
+    "simulationMode": "DEMO"
+  }
 }
 ```
 
@@ -108,7 +98,7 @@ All nine seed JSON files are in `data/fixtures/` relative to `server/`, includin
 - `total` is an integer count of records **after filtering, before pagination**; do not return page length as total when more rows exist.
 - Do not wrap `data` in an unexpected `results`, `items`, `payload`, etc. Do not return a raw top-level array for a Store.
 - Maintain stable types and field names across responses; numeric amounts are numeric JSON values, not formatted currency strings.
-- Optional `as_of` (ISO-8601 UTC) and `simulation_tick` provide source/snapshot context.
+- `meta.asOf` (ISO-8601 UTC), `meta.tickIndex` and `meta.simulationMode` carry snapshot context on every simulated-financial response. `meta` is supplemental; it never replaces top-level `total`. Do not use top-level `as_of` or `simulation_tick`.
 
 ### Single record / dashboard `GET` success
 
@@ -119,8 +109,9 @@ All nine seed JSON files are in `data/fixtures/` relative to `server/`, includin
     "id": 7,
     "name": "Technology Growth",
     "total_value": 1284500.0,
-    "return_percent": 18.4
-  }
+    "investment_pl": 12500.0
+  },
+  "meta": { "asOf": "2026-11-13T13:00:00.000Z", "tickIndex": 180, "simulationMode": "DEMO" }
 }
 ```
 
@@ -130,7 +121,8 @@ All nine seed JSON files are in `data/fixtures/` relative to `server/`, includin
 {
   "success": true,
   "data": { "id": 123, "portfolio_id": 7, "symbol": "AAPL", "quantity": 5 },
-  "message": "Transaction recorded"
+  "message": "Simulated trade executed",
+  "meta": { "asOf": "2026-11-13T13:00:00.000Z", "tickIndex": 180, "simulationMode": "DEMO" }
 }
 ```
 
@@ -143,11 +135,14 @@ Use `201 Created` for created resources, `200 OK` when returning a result, or a 
   "success": false,
   "message": "Insufficient cash to complete purchase",
   "code": "INSUFFICIENT_CASH",
+  "error": { "code": "INSUFFICIENT_CASH", "message": "Insufficient cash to complete purchase" },
   "details": { "portfolio_id": 7 }
 }
 ```
 
-- `400` malformed input, `404` unknown entity, `409` business conflict, `422` valid syntax but rejected business rule (choose consistently), `500` unexpected server failure.
+Always send top-level `message` and `code` (for Ext JS handlers) **and** the nested `error: { code, message }` required by root `CLAUDE.md` §7.4. `details` is optional.
+
+- `400` malformed input or failed validation, `404` unknown entity, `409` business-rule conflict (insufficient cash or shares), `500` unexpected server failure. Do not use `422`; root `CLAUDE.md` lists only 400/404/409/500.
 - No HTML error pages for API routes. Error middleware must normalize unexpected failures and log internally without exposing stack traces.
 - Preserve correct Content-Type `application/json`; apply request size limits and valid JSON parsing.
 
@@ -177,15 +172,15 @@ This is a **frontend contract** the server must honor; do not force the frontend
 
 ## 5. JSON is the source of truth; no database
 
-Suggested fixtures:
+The nine canonical fixtures in `server/data/fixtures/` are fixed; do not invent others (in particular **no** holdings snapshot file):
 
-- `companies.json`: fixed real company name/ticker/sector metadata and **fictional** simulation parameters; IDs/symbols are unique.
-- `portfolios.json`: named demo portfolios, base cash, benchmark choice, and fixture references.
-- `initial-holdings.json`: starting positions/cost basis with consistent company IDs.
-- `initial-transactions.json`: historical demo trades with unique IDs and reproducible dates.
-- `simulation-config.json`: global epoch, tick interval, seed, drift/volatility bounds, demo currency.
+- `companies.json`: real company name/ticker/sector metadata and **fictional** simulation parameters; IDs/symbols are unique.
+- `portfolios.json`: demo portfolios, initial cash, base timestamps.
+- `transactions.json`: the canonical baseline BUY/SELL journal; positions, cash and realized P/L are replayed from it.
+- `market-config.json`: seed, epoch, tick duration, simulation speed, base prices, drift/volatility, default scenario.
+- `market-scenarios.json`, `market-events.json`, `benchmarks.json`, `watchlists.json`, `app-settings.json`: read by the backend and exposed only through REST.
 - `server/data/runtime/transactions.json`: append-only or safely updated local demo transaction journal.
-- `server/data/runtime/simulation-state.json`: optional explicit simulation time settings and last committed sequence; **not** a price cache that changes truth unpredictably.
+- `server/data/runtime/state.json`: optional; **not** a price cache that changes truth unpredictably.
 
 Use Node `fs`/`fs.promises` and `path` for file operations; no database driver or ORM. Validate fixtures at startup (required fields, types, referential integrity, duplicate IDs, nonnegative quantities).
 
@@ -196,31 +191,33 @@ Use Node `fs`/`fs.promises` and `path` for file operations; no database driver o
 - Do not perform simultaneous read/modify/write without coordination; otherwise transaction updates can be lost.
 - Use atomicity and backup/recovery appropriate to a **single-process demo**. If multi-process deployment is requested, explain that flat files need external coordination or a revised storage choice.
 - Avoid direct user-provided file paths. Build paths from constants and restrict writes to the runtime directory.
-- Include a human-triggered reset mechanism with confirmation/authorization for any exposed endpoint; resetting must never occur automatically at server start.
+- Reset is a **user-run script only** (`demo:reset`); do not expose a reset HTTP endpoint. Resetting must never occur automatically at server start.
 
 ## 6. Deterministic time-based price simulation
 
 **Critical invariant:** **Same company + same simulation tick + same configuration => same price**, regardless of which endpoint is called, request order, process restart, or screen. No `Math.random()` inside a request handler to calculate live prices.
 
-Conceptual parameters:
+Parameters come from `market-config.json` (inspect the real key names, e.g. `simulation.epoch_utc`, `tick_duration_ms`, `simulation_speed`, `default_scenario_id`), not from invented values. Conceptually:
 
 ```json
 {
-  "seed": "portfolioiq-demo-v1",
-  "epoch_utc": "2026-01-01T00:00:00.000Z",
-  "tick_seconds": 5,
-  "base_currency": "USD",
+  "seed": "...",
+  "epoch_utc": "2025-01-01T00:00:00Z",
+  "tick_duration_ms": 5000,
+  "default_scenario_id": "normal",
   "price_floor": 0.01
 }
 ```
 
+The scenario (from `market-scenarios.json`) is part of the price function: `price(symbol, tick, scenario)`. Same symbol + scenario + tick + config => same price.
+
 Algorithm recommendation:
 
-1. Choose an authoritative server clock (UTC). Determine `tick = floor((now - epoch) / tick_seconds)`, or accept a **validated snapshot tick** from the client.
+1. Choose an authoritative, injectable server clock (UTC). Determine `tickIndex = floor((now - epoch) / tick_duration_ms)` (apply `simulation_speed` as configured), or accept a **validated snapshot `tick`/`asOf`** query parameter.
 2. Assign each company a fixed fictional base price, bounded volatility and drift, plus a stable hash-based seed.
 3. Compute price as a deterministic function of company ID/seed and tick. Suitable approaches: seeded pseudo-random per-tick returns accumulated/cached correctly, or a deterministic smooth trend + multi-frequency oscillation. The result must be bounded, finite and reproducible.
 4. Use **exactly the same price function** for endpoint `/companies`, `/holdings`, `/portfolios`, `/dashboard`, `/analytics`, and historical charts.
-5. Define `previous_price` at tick - 1 and `change = current_price - previous_price`, `change_percent = 100 * change / previous_price` when previous_price > 0.
+5. Define the **previous price** for daily change as the price at the start of the current simulated UTC day (the last sample before it), not tick-1 (a tick is seconds, not a day). `change = current_price - previous_price`, `change_percent = 100 * change / previous_price` when previous_price > 0. This default is recorded in `docs/DECISIONS.md` and is labelled "indicative price change".
 6. Generate price history by evaluating the **same function** for prior ticks. Never fabricate independent chart histories that do not reconcile with current quote.
 7. Round prices for display only or explicitly define a consistent calculation rounding policy. Avoid drift from repeated rounding of intermediate values.
 8. Use a stable seed and fixed epoch so restarting the server produces the same value at the same tick, unless an explicit reset/config change occurs.
@@ -229,10 +226,10 @@ Algorithm recommendation:
 
 ### Snapshot consistency
 
-When one dashboard refresh causes multiple concurrent HTTP requests, the *same* `simulation_tick` must be used for those associated responses. Options:
+When one refresh causes multiple concurrent HTTP requests, the *same* `meta.tickIndex` / `meta.asOf` must be used for those associated responses. Options:
 
-- A single aggregate dashboard endpoint returns all correlated metrics at one computed tick; **preferred for Dashboard**.
-- Client requests `/api/simulation/state`, obtains `simulation_tick`, and passes `?tick=...` to subsequent endpoints (server validates allowed range).
+- A single aggregate endpoint returns all correlated metrics at one computed tick; **preferred for `/api/dashboard`**.
+- Client requests `/api/simulation/status`, obtains `tickIndex`, and passes `?tick=...` (or `asOf`) to subsequent endpoints (server validates allowed range).
 
 Document the chosen method. Do not allow mismatched prices and holdings totals due to tick boundaries between requests.
 
@@ -245,39 +242,44 @@ market_value_i       = quantity_i * current_price_i
 unrealized_gain_i    = market_value_i - remaining_cost_basis_i
 unrealized_gain_pct  = 100 * unrealized_gain_i / remaining_cost_basis_i  (if > 0)
 portfolio_value      = cash_balance + SUM(market_value_i)
-allocation_pct_i     = 100 * market_value_i / portfolio_value (if > 0)
+allocation_pct_i     = 100 * market_value_i / SUM(market_value_j)   (if > 0; cash EXCLUDED, say so in the API/UI)
+investment_pl        = realized_pl + unrealized_pl
 ```
 
-- State whether `total_return` includes realized P&L, unrealized P&L, dividends and external cash flows. For v1, a documented **time-weighted return** or a clearly labelled gain-on-invested-capital metric is acceptable; do not mislabeled one as the other.
+- For v1, investment P/L = realized + unrealized trading P/L (root `CLAUDE.md` §4). Show a return percentage only if its invested-capital denominator is clearly defined and consistently computed; otherwise omit it. Do not call it a time-weighted return.
 - Distinguish deposits/withdrawals from investment performance. If no external cash flows are modeled, say so.
 - Use one canonical service for valuations and one canonical service for transactions; dashboard and analytics must not duplicate inconsistent formulas.
 - For buys: verify company exists, quantity positive, notional/cost feasible, sufficient portfolio cash; debit cash; create/update holdings and cost basis; record trade with execution tick and fictional price.
 - For sells: verify enough holdings, calculate cost basis removed according to a documented method (e.g. weighted average), credit cash, update holdings, record realized P&L.
 - All updates to related journal/cash/holdings state must be coherent; prefer an append-only transaction event and derive balances/holdings deterministically rather than trying to atomically overwrite multiple JSON state files.
-- Handle duplicate submissions using an idempotency key for transaction creation, or explain the single-user demo simplification explicitly.
+- Duplicate submissions: no idempotency key in v1; document this single-user demo simplification. Serialization through the mutation queue prevents overspending.
 - Reject nonexistent portfolio/company IDs, NaN/Infinity, negative amounts, overflows, and invalid currencies.
-- Be deliberate about decimal/currency precision; for a demo, round at explicit boundaries and test reconciliation; never silently mix cents and dollars.
+- Money is held as **integer cents** internally (root `CLAUDE.md` §4) with whole-share quantities; convert to dollar JSON numbers only at the API boundary, with a documented rounding policy. Test reconciliation; never silently mix cents and dollars.
 
 ## 8. Required API surface for PortfolioIQ
 
-Use the actual product spec as the endpoint authority; baseline suggestions:
+The endpoint authority is root `CLAUDE.md` §7.6. Use exactly these routes:
 
 | Method | Endpoint | Return |
 |---|---|---|
-| GET | `/api/health` | service status, no secrets |
-| GET | `/api/simulation/state` | epoch, tick, interval, as_of |
-| GET | `/api/companies` | collection envelope (filtered/paged if configured) |
-| GET | `/api/companies/:id` | company object and simulated quote |
-| GET | `/api/portfolios` | portfolio collection/summaries |
-| GET | `/api/portfolios/:id` | detail and aggregate metrics |
-| GET | `/api/portfolios/:id/holdings` | holding collection including quote/valuation |
-| GET | `/api/portfolios/:id/transactions` | transaction collection |
-| POST | `/api/portfolios/:id/transactions` | validation + persisted fictional transaction |
-| GET | `/api/dashboard` | one-tick aggregate summary, performance series, allocation |
-| GET | `/api/analytics` | aggregates/sector analysis for selected portfolio/tick |
-| POST | `/api/demo/reset` | local/demo-admin-only reset; never public unauthenticated |
+| GET | `/api/health` | fixture/simulator/API readiness, no secrets |
+| GET | `/api/portfolios` | portfolio list and headline totals |
+| GET | `/api/portfolios/:id` | portfolio details |
+| GET | `/api/dashboard?portfolioId=all&range=1Y` | KPI object, top/bottom holdings, summary |
+| GET | `/api/portfolio-history?portfolioId=all&range=1Y` | time-series collection |
+| GET | `/api/sector-allocation?portfolioId=all` | allocation collection |
+| GET | `/api/companies?query=&page=&start=&limit=` | company directory |
+| GET | `/api/companies/:id/prices?range=6M` | simulated price-series collection |
+| GET | `/api/holdings?portfolioId=all&page=&start=&limit=&sort=&filter=` | filterable/paged holdings |
+| GET | `/api/transactions?portfolioId=all&page=&start=&limit=&sort=&filter=` | transaction history |
+| POST | `/api/transactions` | body `{portfolio_id, company_id, trade_type, quantity}`; server-set price/time |
+| GET | `/api/analytics/pivot?portfolioId=all` | pivot/grouping source collection |
+| GET | `/api/analytics/comparison?range=1Y` | normalized portfolio series (start = 100) |
+| GET | `/api/analytics/sector-comparison` | portfolio-by-sector totals |
+| GET | `/api/exports/holdings.csv?...` | CSV fallback (formula-injection safe) |
+| GET | `/api/simulation/status` | clock mode, tick, snapshot timestamp, next tick |
 
-Do not blindly duplicate a conflicting route from the product specification. Prefer consistency and document the final route map. Add proper `404` behavior and validation for all `:id` parameters.
+Any additional read endpoint (for example scenarios, watchlists, events or benchmarks) must be proposed first and recorded in `docs/DECISIONS.md`. There is **no** HTTP reset endpoint. Add proper `404` behavior and validation for all `:id` parameters.
 
 ## 9. Express request pipeline and error handling
 
@@ -293,19 +295,19 @@ Do not blindly duplicate a conflicting route from the product specification. Pre
 
 ```javascript
 function sendCollection(res, records, total, meta = {}) {
-    return res.status(200).json({
-        success: true,
-        data: records,
-        total,
-        ...meta
-    });
+    return res.status(200).json({ success: true, data: records, total, meta });
+}
+
+function sendRecord(res, record, meta = {}) {
+    return res.status(200).json({ success: true, data: record, meta });
 }
 
 function sendError(res, status, code, message, details) {
     return res.status(status).json({
         success: false,
-        code,
         message,
+        code,
+        error: { code, message },
         ...(details ? { details } : {})
     });
 }
@@ -327,7 +329,7 @@ Must cover:
 6. Missing/invalid IDs, malformed JSON and unsupported query operators produce proper 4xx JSON errors.
 7. Buy/sell validation, duplicate prevention, balance/cost-basis/realized P&L, insufficient cash/shares.
 8. Concurrent writes never lose or corrupt transactions; runtime journal survives restart.
-9. Demo reset restores seed-derived state only when intentionally invoked.
+9. `demo:reset` (user-run script) restores seed-derived state only when intentionally invoked; normal startup never resets.
 10. 500 errors hide internal stack traces from client while logging the failure to server diagnostics.
 
 ## 11. Deployment boundaries and demo safety

@@ -24,6 +24,11 @@ finapp/
     node/CLAUDE_NODEJS_JSON_BACKEND_GUIDELINES.md
     data/SKILL.md
     data/CLAUDE_DATA_EXPANSION.md
+  docs/
+    mockups/                      # Approved visual references (see "Screen mockups")
+      01-dashboard.png
+      02-holdings-explorer.png
+      03-portfolio-analytics.png
   ext-js/                         # Existing Ext JS 8 Modern application
   server/
     src/                         # Node.js Express source code
@@ -45,6 +50,8 @@ finapp/
 ```
 
 **Canonical data rules:** All nine provided JSON files live in `server/data/fixtures/` and are read by Node.js using paths derived from the backend module location (e.g., `path.resolve(__dirname, '../../data/fixtures')` when resolving from `server/src/repositories/`); never depend on `process.cwd()`. `transactions.json` under `fixtures/` is the canonical baseline historical journal; do not introduce competing baseline holdings snapshots. Derive holdings, realized profit and cash from initial funding and the complete ordered journal. Never overwrite seed files during normal requests or startup. Store simulated user actions in `server/data/runtime/` using atomic writes, excluding this folder from Git; create it if missing. Node.js alone reads JSON; the Ext JS app accesses REST only.
+
+**Screen mockups:** `docs/mockups/` holds the approved visual references, one per core screen: `01-dashboard.png` (Portfolio Dashboard), `02-holdings-explorer.png` (Holdings Explorer) and `03-portfolio-analytics.png` (Portfolio Analytics). Before building or restyling a screen, view its mockup and use it for layout, hierarchy, component placement, colors, spacing and visual style. **This `CLAUDE.md` always takes precedence over the mockups.** If a mockup conflicts with this specification (data, calculations, API contract, toolkit or component choices, simulated-data disclosure, restrictions), follow `CLAUDE.md`, do not silently copy the mockup, and list each deviation in `docs/DECISIONS.md` and in the phase report. A mockup never adds a feature, endpoint, calculation or data field that this specification does not define; flag such elements as proposals for the user to decide. Mockup figures, company names and prices are illustrative only; never copy them into fixtures or code. Mockup images are read-only inputs: never edit, delete or move them. If a mockup is missing or unreadable, say so and fall back to §3 and §9; do not claim visual fidelity to an image you have not viewed.
 
 **Hard operating restrictions:** Never execute `sencha`, `npm`, `npx`, or `git` (including indirect or scripted invocations). Never edit the Sencha SDK `ext/` directory, wherever installed. Claude may edit project-owned application files under `ext-js/`, the backend source under `server/`, and fixture data only when explicitly needed and safe. When a prohibited command is needed, tell the human the exact command, working directory, purpose and verification step. Do not report unexecuted build/test results as successful. Direct `node` checks are permitted if they do not call restricted commands or modify protected files.
 
@@ -368,7 +375,7 @@ The top-level `message` is deliberately included for straightforward Ext JS fail
 The following pattern is **required** for ordinary paged collections (verify precise config support against the project's installed Modern SDK version):
 
 ```javascript
-Ext.define('PortfolioIQ.store.HoldingsStore', {
+Ext.define('FinApp.store.HoldingsStore', {
     extend: 'Ext.data.Store',
     alias: 'store.holdings',
 
@@ -402,7 +409,7 @@ Ext.define('PortfolioIQ.store.HoldingsStore', {
 Modern grid (illustrative; use Modern-compatible grid/filter/paging APIs for the installed SDK):
 
 ```javascript
-Ext.define('PortfolioIQ.view.holdings.HoldingsView', {
+Ext.define('FinApp.view.holdings.HoldingsView', {
     extend: 'Ext.grid.Grid',
     xtype: 'holdings-view',
 
@@ -484,22 +491,22 @@ function sendRecord(res, record, meta = {}) {
 
 ## 8. Repository layout (ACTUAL workspace)
 
-Use the root structure above, not the previous suggested `server/data/fixtures/` or `server/data/fixtures/` layout. Place server implementation code and runtime journal under `server/`; all nine immutable JSON fixtures stay under root `server/data/fixtures/`. Preserve existing app-owned source structure under `ext-js/`. Create `docs/` only if useful for decisions and API documentation.
+Use the root structure above, not the previous suggested `server/data/fixtures/` or `server/data/fixtures/` layout. Place server implementation code and runtime journal under `server/`; all nine immutable JSON fixtures stay under root `server/data/fixtures/`. Preserve existing app-owned source structure under `ext-js/`. `docs/` holds `mockups/` (provided, read-only) and, as needed, `DECISIONS.md` and API documentation.
 
 Frontend preferred names (adjust if needed):
 
-- `PortfolioIQ.view.main.Main`
-- `PortfolioIQ.view.dashboard.DashboardView`
-- `PortfolioIQ.view.holdings.HoldingsView`
-- `PortfolioIQ.view.holdings.TradeDialog`
-- `PortfolioIQ.view.analytics.AnalyticsView`
+- `FinApp.view.main.Main`
+- `FinApp.view.dashboard.DashboardView`
+- `FinApp.view.holdings.HoldingsView`
+- `FinApp.view.holdings.TradeDialog`
+- `FinApp.view.analytics.AnalyticsView`
 - Corresponding ViewModels, Controllers, Stores, and Models using Ext JS Modern Toolkit conventions.
 
-Do not assume the namespace `PortfolioIQ` is already configured; register it in the Sencha app configuration if necessary.
+The Ext JS application is named **FinApp** and its class namespace is `FinApp` (already configured in `ext-js/app.json`). Do not rename it or introduce a second `PortfolioIQ.*` namespace. "PortfolioIQ" remains the product name used in UI text and documentation.
 
 ## 9. UI design system
 
-Aim for a modern enterprise fintech look, markedly more refined than a stock Ext JS Modern application:
+The approved mockups in `docs/mockups/` are the visual reference for each screen (see "Screen mockups" above). Where a mockup is silent or conflicts with this specification, the rules in this document win. Aim for a modern enterprise fintech look, markedly more refined than a stock Ext JS Modern application:
 
 - Light neutral main background; white surfaces with subtle borders/shadows.
 - Dark navy or slate navigation and headings; restrained blue accent; clear positive/negative indicators.
