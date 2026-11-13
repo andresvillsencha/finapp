@@ -37,6 +37,14 @@ Before implementation, Claude Code must inspect and, where relevant, load:
 - **Visual design:** the approved mockups in `docs/mockups/` (`01-dashboard.png`, `02-holdings-explorer.png`, `03-portfolio-analytics.png`) are the visual reference for layout and style. **`CLAUDE.md` always wins over the mockups** (§3 requirements, §4 calculations, §7 API, §9 design rules, restrictions). Record every deviation in `docs/DECISIONS.md` and the phase report; a mockup never adds features, endpoints or fields. Do not claim fidelity to an image that has not been viewed.
 - Preserve existing working code unless a change is required for the approved phase.
 
+### Confirmed decisions
+
+- **Namespace:** the Ext JS app is `FinApp` (already in `app.json`); "PortfolioIQ" is the product name only.
+- **Daily change:** measured from the start of the current UTC day (indicative price change).
+- **Scope of extras:** scenario support and benchmark series are core. Watchlists, market-events markers and simulator controls are deferred until Phases 1 to 5 are approved.
+- **Database:** none; `mysql2` has been uninstalled.
+- **Mockups:** `docs/mockups/` is the visual reference; `CLAUDE.md` wins on any conflict.
+
 ### Canonical layout (from `CLAUDE.md`)
 
 ```text
@@ -113,7 +121,7 @@ Provide a reliable Node.js/Express API, backed only by JSON files and a determin
 **Audit (Milestone 0)**
 - Inspect the repository, installed Node version and existing server files; confirm no database is used.
 - Write `docs/DECISIONS.md` with assumptions and any fallbacks, and a short implementation checklist.
-- Remove the unused `mysql2` dependency. Because Claude cannot run `npm`, this is a command handed to the user: `npm uninstall mysql2` in `server/`.
+- Confirm no database dependency remains (`mysql2` was already uninstalled by the user).
 
 **Fixtures and simulator (Milestone 1)**
 - Validate the nine fixtures in `server/data/fixtures/`: IDs, references, funding, trade history. Do not modify them unless explicitly needed and safe.
@@ -368,7 +376,7 @@ Update this table **only after the user approves a phase**.
 
 | Phase | Status | Approval / notes |
 |---|---|---|
-| 1 — Backend foundation | Not started | — |
+| 1 — Backend foundation | Approved | Approved by the user; 54/54 backend tests and 10/10 `demo:verify` checks passed. See `docs/DECISIONS.md` and `docs/API.md`. |
 | 2 — Ext JS foundation | Not started | — |
 | 3 — Portfolio Dashboard | Not started | — |
 | 4 — Holdings Explorer | Not started | — |

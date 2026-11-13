@@ -8,7 +8,7 @@ This file is `.claude/skills/data/CLAUDE_DATA_EXPANSION.md` in `finapp/`. Read r
 Implement the expanded fixture files in the existing PortfolioIQ Node.js backend without a database. Ensure Ext JS 8 Modern Toolkit accesses everything via REST. The expanded capabilities are three watchlists, a fictional market-event calendar, a scenario selector (normal/bull/bear/volatile/correction/recovery), and two simulated benchmark series.
 
 ## Phasing relative to root `CLAUDE.md`
-Root `CLAUDE.md` §3 defines the three core screens and does not list these extras. Treat them as follows unless the user decides otherwise (record the decision in `docs/DECISIONS.md`):
+Root `CLAUDE.md` §3 defines the three core screens and does not list these extras. The user has **confirmed** the following split (record it in `docs/DECISIONS.md`):
 - **Core (build with the backend):** scenario support inside the price function (`market-config.json` already has `default_scenario_id`; scenarios come from `market-scenarios.json`) and benchmark series for the normalized comparison in Analytics.
 - **Later, optional extras (only after Phases 1 to 5 are approved):** watchlist picker, market-events markers, simulator controls (pause/resume, speed presets, fixed-time preview).
 - Any endpoint these need must be proposed and recorded before it is added; the route list in root `CLAUDE.md` §7.6 is the baseline.

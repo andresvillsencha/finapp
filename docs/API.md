@@ -1,0 +1,96 @@
+# PortfolioIQ API inventory (Phase 1)
+
+Base path `/api`. **All data is simulated.** JSON only. Numbers are JSON numbers (dollars with up to 2 decimals unless noted); timestamps are ISO-8601 UTC.
+
+## Envelopes
+
+Collection (Ext JS reader: `rootProperty: 'data'`, `totalProperty: 'total'`, `successProperty: 'success'`, `messageProperty: 'message'`):
+
+```json
+{ "success": true, "data": [], "total": 0,
+  "meta": { "asOf": "2026-11-13T12:00:00.000Z", "tickIndex": 11776320, "simulationMode": "DEMO",
+            "scenarioId": "normal", "nextTickAt": "2026-11-13T12:00:05.000Z" } }
+```
+
+`total` is the number of rows matching the filters **before** paging. Record: `{ "success": true, "data": {}, "meta": {} }`.
+
+Error (HTTP 400/404/409/500):
+
+```json
+{ "success": false, "message": "Insufficient simulated cash balance", "code": "INSUFFICIENT_CASH",
+  "error": { "code": "INSUFFICIENT_CASH", "message": "Insufficient simulated cash balance" },
+  "details": { "portfolio_id": 5, "required": 3007, "available": 1200.5 } }
+```
+
+## Common query parameters
+
+| Parameter | Meaning |
+|---|---|
+| `portfolioId` | `all` (default) or a portfolio id |
+| `range` | `1D`, `1W`, `1M`, `3M`, `6M`, `1Y`, `ALL` (simulated days) |
+| `tick` / `asOf` | Optional snapshot to reuse across related requests (not both; must not be in the future) |
+| `page`, `start`, `limit` | Paging (default 25, max 100) |
+| `sort` | `[{"property":"symbol","direction":"ASC"}]` (URL-encoded) or `sort=symbol&dir=ASC` |
+| `filter` | `[{"property":"sector","value":"Tech","operator":"like"}]` (URL-encoded). Operators: `= == === eq != ne < lt <= le > gt >= ge like in notin` |
+
+## Endpoints
+
+| Method | Path | Returns |
+|---|---|---|
+| GET | `/api/health` | Fixture and simulator readiness |
+| GET | `/api/simulation/status` | Mode, scenario, tick, `as_of`, `next_tick_at`, tick duration, speed, refresh interval |
+| GET | `/api/portfolios` | Portfolios with headline totals (collection) |
+| GET | `/api/portfolios/:id` | One portfolio with totals (record) |
+| GET | `/api/dashboard?portfolioId&range` | `{scope, kpis, top_performers, bottom_performers, portfolio_summary, definitions}` (record) |
+| GET | `/api/portfolio-history?portfolioId&range` | Value series: `timestamp, tick_index, portfolio_value, cash_balance, market_value, investment_pl, investment_pl_pct` |
+| GET | `/api/sector-allocation?portfolioId` | `sector, market_value, allocation_pct, position_count` (cash excluded) |
+| GET | `/api/companies?query&page&start&limit&sort&filter` | Company directory with simulated quote |
+| GET | `/api/companies/:id/prices?range` | `timestamp, tick_index, price` series |
+| GET | `/api/holdings?portfolioId&page&start&limit&sort&filter` | Open positions with derived values |
+| GET | `/api/transactions?portfolioId&page&start&limit&sort&filter` | Transaction history (filters: portfolio, ticker, side, date range) |
+| POST | `/api/transactions` | Execute a simulated BUY/SELL (201) |
+| GET | `/api/analytics/pivot?portfolioId` | Flat position rows: sector, company, portfolio, market value, cost basis, unrealized P/L |
+| GET | `/api/analytics/comparison?range` | Normalized series (start = 100): `portfolio_<id>` and `benchmark_<id>` fields; `meta.series` describes them |
+| GET | `/api/analytics/sector-comparison` | One row per sector with `portfolio_<id>` (value) and `portfolio_<id>_pct` fields |
+| GET | `/api/exports/holdings.csv?portfolioId&filter&sort` | CSV of all matching holdings (text cells protected against formula injection) |
+
+### Holdings row
+
+`id, portfolio_id, portfolio_name, company_id, symbol, company, sector, industry, quantity, average_cost, current_price, previous_price, day_change, day_change_pct, market_value, cost_basis, unrealized_pl, unrealized_pl_pct, daily_pl, allocation_pct`
+
+- `market_value = quantity * current_price`; `cost_basis` is the exact open-position cost; `average_cost = cost_basis / quantity`.
+- `unrealized_pl_pct` is `null` when the cost basis is zero.
+- `allocation_pct` = share of the selected scope's **equity** market value (cash excluded).
+- `previous_price` is the price at the start of the current UTC day.
+
+### Dashboard KPIs
+
+`portfolio_value, total_gain_loss, total_gain_loss_pct, daily_change, daily_change_pct, cost_basis, cash_balance, market_value, unrealized_pl, unrealized_pl_pct, realized_pl, initial_funding, position_count`
+
+- `total_gain_loss` = realized + unrealized trading P/L; `total_gain_loss_pct` = that divided by initial funding.
+- `daily_change` is an **indicative price change** since the start of the UTC day (not a time-weighted return); `daily_change_pct = daily_change / (portfolio_value - daily_change) * 100`.
+
+### POST /api/transactions
+
+Request (never send a price or time; they are ignored):
+
+```json
+{ "portfolio_id": 1, "company_id": 2, "trade_type": "BUY", "quantity": 10 }
+```
+
+Response `201`:
+
+```json
+{ "success": true,
+  "data": { "id": "R-000001", "seq": 91, "portfolio_id": 1, "portfolio_name": "Technology Growth",
+            "company_id": 2, "symbol": "MSFT", "company": "Microsoft Corporation", "trade_type": "BUY",
+            "quantity": 10, "execution_price": 300.7, "amount": 3007, "fee": 0, "realized_pl": null,
+            "executed_at": "2026-11-13T12:00:00.000Z", "tick_index": 11776320, "source": "RUNTIME",
+            "portfolio_cash_after": 533520.92, "position_quantity_after": 10 },
+  "message": "Simulated trade executed",
+  "meta": { "asOf": "2026-11-13T12:00:00.000Z", "tickIndex": 11776320, "simulationMode": "DEMO" } }
+```
+
+### Error codes
+
+`INVALID_JSON, PAYLOAD_TOO_LARGE, INVALID_TRADE, INVALID_TRADE_TYPE, INVALID_QUANTITY, INVALID_PORTFOLIO_ID, INVALID_COMPANY_ID, INVALID_RANGE, INVALID_PAGING, INVALID_SORTER, INVALID_FILTER, INVALID_TICK, INVALID_AS_OF, INVALID_SNAPSHOT, TICK_OUT_OF_RANGE, AS_OF_OUT_OF_RANGE` (400); `PORTFOLIO_NOT_FOUND, COMPANY_NOT_FOUND, ROUTE_NOT_FOUND` (404); `INSUFFICIENT_CASH, INSUFFICIENT_SHARES, OUT_OF_ORDER_TRANSACTION, TRADING_DISABLED, PORTFOLIO_NOT_ACTIVE` (409); `PERSISTENCE_FAILED, INTERNAL_ERROR` (500).

@@ -197,7 +197,7 @@ Treat calculations as part of the backend domain model and make them testable.
 | Unrealized P/L ($) | `market_value - open_position_cost_basis` |
 | Unrealized P/L (%) | `unrealized_pl / open_position_cost_basis * 100`; null when basis is zero |
 | Total portfolio value | `cash_balance + sum(market_value)` |
-| Daily P/L | `sum(quantity * (latest_price - previous_available_price))` for current positions; label as **indicative price change**, not time-weighted return |
+| Daily P/L | `sum(quantity * (latest_price - previous_available_price))` for current positions, where `previous_available_price` is the simulated price at the **start of the current UTC day** (user-confirmed); label as **indicative price change**, not time-weighted return |
 | Daily % | `daily_pl / (total_portfolio_value - daily_pl) * 100`, when denominator > 0; this assumes no same-day external cash flows and must be labeled illustrative |
 | Portfolio allocation % | `position_market_value / sum(position_market_values) * 100`; exclude cash from equity allocation and state that explicitly |
 | Total gain/loss | For v1, **investment P/L = realized trading P/L + unrealized trading P/L**; do **not** confuse it with total account growth driven by cash flows |
