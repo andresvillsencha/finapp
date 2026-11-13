@@ -11,7 +11,8 @@ Ext.define('FinApp.util.Format', {
     singleton: true,
 
     requires: [
-        'Ext.util.Format'
+        'Ext.util.Format',
+        'Ext.Date'
     ],
 
     EMPTY: '—',
@@ -65,6 +66,38 @@ Ext.define('FinApp.util.Format', {
         }
 
         return value > 0 ? 'piq-pos' : 'piq-neg';
+    },
+
+    /** Compact axis labels: 1250000 -> "$1.25M", 980000 -> "$980K", 450 -> "$450". */
+    compactUsd: function (value) {
+        var abs, sign;
+
+        if (!Ext.isNumber(value)) {
+            return this.EMPTY;
+        }
+
+        abs = Math.abs(value);
+        sign = value < 0 ? '-' : '';
+
+        if (abs >= 1000000000) {
+            return sign + '$' + (abs / 1000000000).toFixed(2) + 'B';
+        }
+        if (abs >= 1000000) {
+            return sign + '$' + (abs / 1000000).toFixed(2) + 'M';
+        }
+        if (abs >= 1000) {
+            return sign + '$' + (abs / 1000).toFixed(0) + 'K';
+        }
+
+        return sign + '$' + abs.toFixed(0);
+    },
+
+    /**
+     * Format an epoch-millisecond instant using its UTC calendar fields (not the
+     * browser's time zone), e.g. utcFormat(ms, 'M j').
+     */
+    utcFormat: function (ms, format) {
+        return Ext.Date.format(Ext.Date.utcToLocal(new Date(ms)), format);
     },
 
     /**

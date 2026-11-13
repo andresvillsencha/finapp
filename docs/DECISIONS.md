@@ -88,3 +88,38 @@ To enable the real Pivot Grid / Exporter later, the licensed `pivot` and `export
 ### Not verified in Phase 2
 
 Claude cannot run Sencha Cmd, so the app was **not built or opened**. Checks done: every Ext class/config used was verified against the 8.0.0.43 Modern sources, all frontend JS parses (`node --check`), and the pure logic of `FinApp.util.Api` / `FinApp.util.Format` was exercised with a stub. Visual layout and runtime behavior must be confirmed by the user (checklist in the Phase 2 report).
+
+## Phase 3 — Portfolio Dashboard
+
+### Data mapping (no new API endpoints were needed)
+
+| Dashboard element | Source | Notes |
+|---|---|---|
+| KPI cards (Portfolio Value, Total Gain/Loss, Daily Change, Invested Cost Basis, Cash Balance) | `GET /api/dashboard` → `data.kpis` | Formatted only; labels state the definitions |
+| Portfolio value chart (1M / 3M / 6M / 1Y / All) | `GET /api/portfolio-history` | Store `FinApp.store.PortfolioHistory`; simulated-time axis, UTC labels |
+| Sector allocation donut + legend | `GET /api/sector-allocation` | Store `FinApp.store.SectorAllocation`; cash excluded (stated on the card) |
+| Top five / bottom five holdings | `GET /api/dashboard` → `top_performers`, `bottom_performers` | Ranked by unrealized return on cost; the lists never overlap |
+| Portfolio summary table | `GET /api/dashboard` → `portfolio_summary` | Value, gain/loss, return, indicative daily change, allocation (share of total value), cash |
+| Footnote | `GET /api/dashboard` → `definitions` | Server-supplied wording for gain/loss and daily change |
+
+### Frontend decisions
+
+1. **One snapshot per refresh.** The three requests are sent together with the same `tick` (the latest tick reported by `/api/simulation/status`), so KPIs, the chart's last point and the allocation reconcile. Verified against the real API for all five portfolios and all ranges (chart end value equals the KPI).
+2. **Refresh rules.** The Dashboard reloads when the shell announces a new tick (`piqsnapshot`), when the shared portfolio selection or the range changes, and when the screen is shown again. It skips work when nothing changed or when another screen is visible. Overlapping triggers are coalesced into one follow-up request. A refresh of the same scope is silent; a scope change shows a mask.
+3. **States.** `loading` (mask, first load or scope change), `ready`, `error` (banner with Retry, last data stays visible). A portfolio with no open positions shows an empty state for the donut and "No open positions." in both tables; null percentages are shown as an em dash.
+4. **Small tables are XTemplate HTML tables**, not grids: they hold at most five rows, need no sorting or paging, and size to their content. (The Modern grid is used for Holdings in Phase 4.)
+5. **Chart.** `Ext.chart.CartesianChart` with a filled line series, a numeric value axis fitted to the data (±12% padding, so changes are visible instead of starting at zero) and a time axis labelled from UTC calendar fields (`FinApp.util.Format.utcFormat`), never the browser's time zone. Markers appear on hover with a tooltip (UTC time, value, gain/loss). The donut is `Ext.chart.PolarChart` with a pie series; its HTML legend uses the same palette (`FinApp.util.Palette`) so colours always match.
+6. **Accuracy labels.** "Daily Change (indicative)" and "since UTC day start" on the card, plus the server's definitions in a footnote and "Illustrative simulated figures". The return percentage is labelled "of initial funding".
+7. **Accessibility.** Gain/loss uses a sign and an arrow in addition to colour; tables have captions and header scopes; no information depends on colour alone.
+8. **Layout.** Rows use a wrapping flex layout, so cards reflow on tablet widths; the summary table scrolls horizontally if needed.
+
+### Mockup deviations (CLAUDE.md wins)
+
+- KPI set follows section 3.1 (Portfolio Value, Total Gain/Loss, Daily Change, Invested Cost Basis, Cash Balance): no separate "Unrealized P/L" or "Return %" cards, and Cash does not show a "% of portfolio" figure (it would be a UI-side calculation).
+- Added what the mockup lacks: the bottom five, the portfolio summary table and the definitions footnote.
+- Not built (not in the specification): Recent Activity, Benchmark Comparison and the Simulation Status card on the Dashboard (simulation status already lives in the sidebar), sparklines, the donut's centre total label, the 1W range and the header date-range dropdown (ranges are in the chart card).
+- Sector and portfolio names come from the fixtures (for example "Financials").
+
+### Not verified in Phase 3
+
+Claude cannot run Sencha Cmd, so the screen was **not built or opened**. Checks done: Ext classes and chart configs verified against the 8.0.0.43 sources; all frontend JS parses and is ES5; the controller's refresh logic (snapshot gating, scope change, coalescing, failure and retry) and the view-model formulas were exercised with a stub; and the real API was checked to contain every field the screen reads. Visual layout, chart rendering, tooltips and runtime behavior must be confirmed by the user.

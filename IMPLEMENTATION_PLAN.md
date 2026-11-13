@@ -377,8 +377,8 @@ Update this table **only after the user approves a phase**.
 | Phase | Status | Approval / notes |
 |---|---|---|
 | 1 — Backend foundation | Approved | Approved by the user; 54/54 backend tests and 10/10 `demo:verify` checks passed. See `docs/DECISIONS.md` and `docs/API.md`. |
-| 2 — Ext JS foundation | Not started | — |
-| 3 — Portfolio Dashboard | Not started | — |
+| 2 — Ext JS foundation | Approved | Approved by the user after running the shell in the browser. Pivot Grid and Exporter packages are not installed; fallbacks are used. See `docs/DECISIONS.md`. |
+| 3 — Portfolio Dashboard | Approved | Approved by the user after running it in the browser; two layout fixes were applied (KPI row wrapper, performance chart fill). See `docs/DECISIONS.md`. |
 | 4 — Holdings Explorer | Not started | — |
 | 5 — Portfolio Analytics | Not started | — |
 | 6 — Integration and QA | Not started | — |

@@ -1,0 +1,203 @@
+/*
+ * Styling of the Portfolio Dashboard (FinApp.view.dashboard.DashboardView).
+ * Namespaced `.piq-*`; the palette is documented in Application.scss.
+ */
+
+.piq-dashboard {
+    // keep the last cards clear of the bottom edge when scrolled
+    padding-bottom: 32px;
+}
+
+.piq-dash-banner {
+    margin-top: 14px;
+    border: 1px solid #f5c2c2;
+    border-radius: 10px;
+}
+
+// ---- KPI cards ------------------------------------------------------------------
+
+.piq-kpi-row {
+    min-height: 112px;
+    margin: 12px -8px 0;
+}
+
+// The template renders inside an inner element of the component, so the flex
+// layout lives on this wrapper rather than on the component's own element.
+.piq-kpi-grid {
+    display: flex;
+    flex-flow: row wrap;
+    width: 100%;
+}
+
+.piq-kpi {
+    display: flex;
+    flex: 1 1 210px;
+    align-items: center;
+    margin: 8px;
+    padding: 16px 18px;
+    background: #ffffff;
+    border: 1px solid #e3e9f2;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(15, 35, 80, 0.06);
+}
+
+.piq-kpi-icon {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-right: 14px;
+    border-radius: 12px;
+    background: #e8f0fe;
+    font-size: 18px;
+    color: #1d5fd1;
+}
+
+.piq-kpi-label {
+    font-size: 13px;
+    color: #5b6b8c;
+}
+
+.piq-kpi-value {
+    margin: 2px 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #0b1f4d;
+    font-variant-numeric: tabular-nums;
+
+    &.piq-pos {
+        color: #15803d;
+    }
+
+    &.piq-neg {
+        color: #b91c1c;
+    }
+}
+
+.piq-kpi-sub {
+    font-size: 12px;
+    color: #5b6b8c;
+}
+
+.piq-footnote {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #5b6b8c;
+}
+
+// ---- rows and cards ----------------------------------------------------------------
+
+.piq-dash-row {
+    margin: 8px -8px 0;
+}
+
+.piq-card.piq-dash-card {
+    margin: 8px;
+}
+
+.piq-card-sub {
+    margin: -6px 0 10px;
+    font-size: 12px;
+    color: #5b6b8c;
+}
+
+.piq-range {
+    flex: none;
+    margin-left: 12px;
+}
+
+// ---- tables (top / bottom five, portfolio summary) --------------------------------
+
+.piq-table-wrap {
+    overflow-x: auto;
+}
+
+.piq-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+
+    th {
+        padding: 8px 6px;
+        border-bottom: 1px solid #e3e9f2;
+        font-weight: 600;
+        text-align: left;
+        color: #5b6b8c;
+        white-space: nowrap;
+    }
+
+    td {
+        padding: 9px 6px;
+        border-bottom: 1px solid #f0f3f8;
+        color: #1e293b;
+    }
+
+    .piq-num {
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .piq-ticker {
+        font-weight: 700;
+        color: #0b1f4d;
+    }
+
+    .piq-pos {
+        color: #15803d;
+    }
+
+    .piq-neg {
+        color: #b91c1c;
+    }
+}
+
+.piq-empty {
+    padding: 18px 6px;
+    text-align: center;
+    font-size: 13px;
+    color: #5b6b8c;
+}
+
+// visually hidden, available to screen readers
+.piq-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+}
+
+// ---- sector legend -------------------------------------------------------------------
+
+.piq-legend-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 2px;
+    border-bottom: 1px solid #f0f3f8;
+    font-size: 13px;
+    color: #1e293b;
+}
+
+.piq-legend-name {
+    display: flex;
+    align-items: center;
+}
+
+.piq-dot {
+    display: inline-block;
+    flex: none;
+    width: 10px;
+    height: 10px;
+    margin-right: 8px;
+    border-radius: 50%;
+}
+
+@media (max-width: 1000px) {
+    .piq-kpi {
+        flex-basis: 180px;
+    }
+}
