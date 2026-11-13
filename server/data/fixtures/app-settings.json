@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "application_name": "PortfolioIQ",
+  "demo_only": true,
+  "currency": "USD",
+  "default_portfolio_id": 1,
+  "default_chart_range": "6M",
+  "chart_ranges": [
+    "1D",
+    "1W",
+    "1M",
+    "3M",
+    "6M",
+    "1Y",
+    "ALL"
+  ],
+  "refresh_interval_ms": 5000,
+  "page_size": 25,
+  "max_page_size": 100,
+  "trading_enabled": true,
+  "allowed_trade_types": [
+    "BUY",
+    "SELL"
+  ],
+  "allow_short_selling": false,
+  "allow_margin": false,
+  "allow_fractional_shares": false,
+  "transaction_fee_cents": 0,
+  "expose_simulation_controls": true,
+  "disclaimer": "Demonstration only. Real company names and tickers; all market values, prices, returns, dates of events, trades, and benchmarks are simulated."
+}

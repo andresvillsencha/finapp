@@ -1,0 +1,242 @@
+[
+  {
+    "id": 1,
+    "company_id": 1,
+    "date": "2026-11-16",
+    "event_type": "DEMO_EARNINGS",
+    "title": "Simulated earnings event for AAPL",
+    "is_real_event": false
+  },
+  {
+    "id": 2,
+    "company_id": 2,
+    "date": "2026-11-19",
+    "event_type": "DEMO_DIVIDEND",
+    "title": "Simulated dividend event for MSFT",
+    "is_real_event": false
+  },
+  {
+    "id": 3,
+    "company_id": 3,
+    "date": "2026-11-22",
+    "event_type": "DEMO_NEWS",
+    "title": "Simulated company news event for NVDA",
+    "is_real_event": false
+  },
+  {
+    "id": 4,
+    "company_id": 4,
+    "date": "2026-11-25",
+    "event_type": "DEMO_EARNINGS",
+    "title": "Simulated earnings event for AMZN",
+    "is_real_event": false
+  },
+  {
+    "id": 5,
+    "company_id": 5,
+    "date": "2026-11-28",
+    "event_type": "DEMO_DIVIDEND",
+    "title": "Simulated dividend event for GOOGL",
+    "is_real_event": false
+  },
+  {
+    "id": 6,
+    "company_id": 6,
+    "date": "2026-12-01",
+    "event_type": "DEMO_NEWS",
+    "title": "Simulated company news event for META",
+    "is_real_event": false
+  },
+  {
+    "id": 7,
+    "company_id": 7,
+    "date": "2026-12-04",
+    "event_type": "DEMO_EARNINGS",
+    "title": "Simulated earnings event for TSLA",
+    "is_real_event": false
+  },
+  {
+    "id": 8,
+    "company_id": 8,
+    "date": "2026-12-07",
+    "event_type": "DEMO_DIVIDEND",
+    "title": "Simulated dividend event for AVGO",
+    "is_real_event": false
+  },
+  {
+    "id": 9,
+    "company_id": 9,
+    "date": "2026-12-10",
+    "event_type": "DEMO_NEWS",
+    "title": "Simulated company news event for ORCL",
+    "is_real_event": false
+  },
+  {
+    "id": 10,
+    "company_id": 10,
+    "date": "2026-12-13",
+    "event_type": "DEMO_EARNINGS",
+    "title": "Simulated earnings event for CRM",
+    "is_real_event": false
+  },
+  {
+    "id": 11,
+    "company_id": 11,
+    "date": "2026-12-16",
+    "event_type": "DEMO_DIVIDEND",
+    "title": "Simulated dividend event for ADBE",
+    "is_real_event": false
+  },
+  {
+    "id": 12,
+    "company_id": 12,
+    "date": "2026-12-19",
+    "event_type": "DEMO_NEWS",
+    "title": "Simulated company news event for AMD",
+    "is_real_event": false
+  },
+  {
+    "id": 13,
+    "company_id": 13,
+    "date": "2026-12-22",
+    "event_type": "DEMO_EARNINGS",
+    "title": "Simulated earnings event for INTC",
+    "is_real_event": false
+  },
+  {
+    "id": 14,
+    "company_id": 14,
+    "date": "2026-12-25",
+    "event_type": "DEMO_DIVIDEND",
+    "title": "Simulated dividend event for CSCO",
+    "is_real_event": false
+  },
+  {
+    "id": 15,
+    "company_id": 15,
+    "date": "2026-12-28",
+    "event_type": "DEMO_NEWS",
+    "title": "Simulated company news event for IBM",
+    "is_real_event": false
+  },
+  {
+    "id": 16,
+    "company_id": 16,
+    "date": "2026-12-31",
+    "event_type": "DEMO_EARNINGS",
+    "title": "Simulated earnings event for QCOM",
+    "is_real_event": false
+  },
+  {
+    "id": 17,
+    "company_id": 17,
+    "date": "2027-01-03",
+    "event_type": "DEMO_DIVIDEND",
+    "title": "Simulated dividend event for TXN",
+    "is_real_event": false
+  },
+  {
+    "id": 18,
+    "company_id": 18,
+    "date": "2027-01-06",
+    "event_type": "DEMO_NEWS",
+    "title": "Simulated company news event for NOW",
+    "is_real_event": false
+  },
+  {
+    "id": 19,
+    "company_id": 19,
+    "date": "2027-01-09",
+    "event_type": "DEMO_EARNINGS",
+    "title": "Simulated earnings event for PANW",
+    "is_real_event": false
+  },
+  {
+    "id": 20,
+    "company_id": 20,
+    "date": "2027-01-12",
+    "event_type": "DEMO_DIVIDEND",
+    "title": "Simulated dividend event for CRWD",
+    "is_real_event": false
+  },
+  {
+    "id": 21,
+    "company_id": 21,
+    "date": "2027-01-15",
+    "event_type": "DEMO_NEWS",
+    "title": "Simulated company news event for JPM",
+    "is_real_event": false
+  },
+  {
+    "id": 22,
+    "company_id": 22,
+    "date": "2027-01-18",
+    "event_type": "DEMO_EARNINGS",
+    "title": "Simulated earnings event for BAC",
+    "is_real_event": false
+  },
+  {
+    "id": 23,
+    "company_id": 23,
+    "date": "2027-01-21",
+    "event_type": "DEMO_DIVIDEND",
+    "title": "Simulated dividend event for WFC",
+    "is_real_event": false
+  },
+  {
+    "id": 24,
+    "company_id": 24,
+    "date": "2027-01-24",
+    "event_type": "DEMO_NEWS",
+    "title": "Simulated company news event for GS",
+    "is_real_event": false
+  },
+  {
+    "id": 25,
+    "company_id": 25,
+    "date": "2027-01-27",
+    "event_type": "DEMO_EARNINGS",
+    "title": "Simulated earnings event for MS",
+    "is_real_event": false
+  },
+  {
+    "id": 26,
+    "company_id": 26,
+    "date": "2027-01-30",
+    "event_type": "DEMO_DIVIDEND",
+    "title": "Simulated dividend event for V",
+    "is_real_event": false
+  },
+  {
+    "id": 27,
+    "company_id": 27,
+    "date": "2027-02-02",
+    "event_type": "DEMO_NEWS",
+    "title": "Simulated company news event for MA",
+    "is_real_event": false
+  },
+  {
+    "id": 28,
+    "company_id": 28,
+    "date": "2027-02-05",
+    "event_type": "DEMO_EARNINGS",
+    "title": "Simulated earnings event for AXP",
+    "is_real_event": false
+  },
+  {
+    "id": 29,
+    "company_id": 29,
+    "date": "2027-02-08",
+    "event_type": "DEMO_DIVIDEND",
+    "title": "Simulated dividend event for BLK",
+    "is_real_event": false
+  },
+  {
+    "id": 30,
+    "company_id": 30,
+    "date": "2027-02-11",
+    "event_type": "DEMO_NEWS",
+    "title": "Simulated company news event for SCHW",
+    "is_real_event": false
+  }
+]

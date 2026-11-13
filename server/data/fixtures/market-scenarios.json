@@ -1,0 +1,56 @@
+[
+  {
+    "id": "normal",
+    "name": "Normal Market",
+    "description": "Baseline synthetic market with sector-specific volatility",
+    "drift_multiplier": 1.0,
+    "volatility_multiplier": 1.0,
+    "shock_bps": 0,
+    "shock_tick_index": null
+  },
+  {
+    "id": "bull",
+    "name": "Bull Market",
+    "description": "Longer-lasting upward pressure without guaranteeing gains",
+    "drift_multiplier": 1.7,
+    "volatility_multiplier": 0.9,
+    "shock_bps": 0,
+    "shock_tick_index": null
+  },
+  {
+    "id": "bear",
+    "name": "Bear Market",
+    "description": "Downward drift and elevated volatility",
+    "drift_multiplier": -1.2,
+    "volatility_multiplier": 1.3,
+    "shock_bps": 0,
+    "shock_tick_index": null
+  },
+  {
+    "id": "volatile",
+    "name": "High Volatility",
+    "description": "Larger frequent changes; all prices remain bounded positive",
+    "drift_multiplier": 1.0,
+    "volatility_multiplier": 2.0,
+    "shock_bps": 0,
+    "shock_tick_index": null
+  },
+  {
+    "id": "correction",
+    "name": "Market Correction",
+    "description": "Fixed synthetic market shock at a configured future tick",
+    "drift_multiplier": 0.3,
+    "volatility_multiplier": 1.3,
+    "shock_bps": -650,
+    "shock_tick_index": 50000
+  },
+  {
+    "id": "recovery",
+    "name": "Market Recovery",
+    "description": "Positive deterministic shock at a configured future tick",
+    "drift_multiplier": 1.3,
+    "volatility_multiplier": 1.0,
+    "shock_bps": 450,
+    "shock_tick_index": 50000
+  }
+]

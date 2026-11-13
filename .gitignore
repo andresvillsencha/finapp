@@ -1,0 +1,24 @@
+# Node.js
+node_modules/
+.env
+.env.*
+
+# Sencha Ext JS
+build/
+ext/
+bootstrap.json
+bootstrap.css
+bootstrap.js
+.sencha/app/sencha.cfg.bak
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

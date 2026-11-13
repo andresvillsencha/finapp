@@ -1,0 +1,665 @@
+{
+  "schema_version": 1,
+  "simulation": {
+    "mode": "DETERMINISTIC_DEMO",
+    "seed": 314159,
+    "epoch_utc": "2025-01-01T00:00:00Z",
+    "tick_duration_ms": 5000,
+    "simulation_speed": 1,
+    "price_decimals": 2,
+    "currency": "USD",
+    "default_scenario_id": "normal",
+    "price_floor_cents": 100,
+    "snapshot_policy": "freeze all computations to one tickIndex per API request"
+  },
+  "instruments": [
+    {
+      "company_id": 1,
+      "symbol": "AAPL",
+      "base_price_cents": 16106,
+      "drift_per_sim_day_bps": 8,
+      "volatility_multiplier": 1.5,
+      "phase": 1.13678
+    },
+    {
+      "company_id": 2,
+      "symbol": "MSFT",
+      "base_price_cents": 21506,
+      "drift_per_sim_day_bps": 5,
+      "volatility_multiplier": 1.5,
+      "phase": 6.0035
+    },
+    {
+      "company_id": 3,
+      "symbol": "NVDA",
+      "base_price_cents": 22298,
+      "drift_per_sim_day_bps": -2,
+      "volatility_multiplier": 1.5,
+      "phase": 5.85799
+    },
+    {
+      "company_id": 4,
+      "symbol": "AMZN",
+      "base_price_cents": 9967,
+      "drift_per_sim_day_bps": 4,
+      "volatility_multiplier": 1.4,
+      "phase": 3.36055
+    },
+    {
+      "company_id": 5,
+      "symbol": "GOOGL",
+      "base_price_cents": 11243,
+      "drift_per_sim_day_bps": 2,
+      "volatility_multiplier": 1.25,
+      "phase": 3.96481
+    },
+    {
+      "company_id": 6,
+      "symbol": "META",
+      "base_price_cents": 40894,
+      "drift_per_sim_day_bps": -2,
+      "volatility_multiplier": 1.25,
+      "phase": 6.04248
+    },
+    {
+      "company_id": 7,
+      "symbol": "TSLA",
+      "base_price_cents": 23573,
+      "drift_per_sim_day_bps": -4,
+      "volatility_multiplier": 1.4,
+      "phase": 5.39967
+    },
+    {
+      "company_id": 8,
+      "symbol": "AVGO",
+      "base_price_cents": 43264,
+      "drift_per_sim_day_bps": 5,
+      "volatility_multiplier": 1.5,
+      "phase": 5.85452
+    },
+    {
+      "company_id": 9,
+      "symbol": "ORCL",
+      "base_price_cents": 23773,
+      "drift_per_sim_day_bps": 6,
+      "volatility_multiplier": 1.5,
+      "phase": 5.4704
+    },
+    {
+      "company_id": 10,
+      "symbol": "CRM",
+      "base_price_cents": 37027,
+      "drift_per_sim_day_bps": 7,
+      "volatility_multiplier": 1.5,
+      "phase": 0.80373
+    },
+    {
+      "company_id": 11,
+      "symbol": "ADBE",
+      "base_price_cents": 15587,
+      "drift_per_sim_day_bps": 2,
+      "volatility_multiplier": 1.5,
+      "phase": 0.32785
+    },
+    {
+      "company_id": 12,
+      "symbol": "AMD",
+      "base_price_cents": 14597,
+      "drift_per_sim_day_bps": 7,
+      "volatility_multiplier": 1.5,
+      "phase": 4.85834
+    },
+    {
+      "company_id": 13,
+      "symbol": "INTC",
+      "base_price_cents": 40789,
+      "drift_per_sim_day_bps": -4,
+      "volatility_multiplier": 1.5,
+      "phase": 4.28744
+    },
+    {
+      "company_id": 14,
+      "symbol": "CSCO",
+      "base_price_cents": 43695,
+      "drift_per_sim_day_bps": -2,
+      "volatility_multiplier": 1.5,
+      "phase": 5.2887
+    },
+    {
+      "company_id": 15,
+      "symbol": "IBM",
+      "base_price_cents": 5769,
+      "drift_per_sim_day_bps": -3,
+      "volatility_multiplier": 1.5,
+      "phase": 5.19555
+    },
+    {
+      "company_id": 16,
+      "symbol": "QCOM",
+      "base_price_cents": 16963,
+      "drift_per_sim_day_bps": 1,
+      "volatility_multiplier": 1.5,
+      "phase": 0.97433
+    },
+    {
+      "company_id": 17,
+      "symbol": "TXN",
+      "base_price_cents": 36487,
+      "drift_per_sim_day_bps": -5,
+      "volatility_multiplier": 1.5,
+      "phase": 1.64505
+    },
+    {
+      "company_id": 18,
+      "symbol": "NOW",
+      "base_price_cents": 36923,
+      "drift_per_sim_day_bps": 6,
+      "volatility_multiplier": 1.5,
+      "phase": 4.29106
+    },
+    {
+      "company_id": 19,
+      "symbol": "PANW",
+      "base_price_cents": 42196,
+      "drift_per_sim_day_bps": 3,
+      "volatility_multiplier": 1.5,
+      "phase": 2.95343
+    },
+    {
+      "company_id": 20,
+      "symbol": "CRWD",
+      "base_price_cents": 13651,
+      "drift_per_sim_day_bps": -2,
+      "volatility_multiplier": 1.5,
+      "phase": 6.08001
+    },
+    {
+      "company_id": 21,
+      "symbol": "JPM",
+      "base_price_cents": 15668,
+      "drift_per_sim_day_bps": 10,
+      "volatility_multiplier": 1.0,
+      "phase": 1.27528
+    },
+    {
+      "company_id": 22,
+      "symbol": "BAC",
+      "base_price_cents": 24488,
+      "drift_per_sim_day_bps": -3,
+      "volatility_multiplier": 1.0,
+      "phase": 3.65144
+    },
+    {
+      "company_id": 23,
+      "symbol": "WFC",
+      "base_price_cents": 3750,
+      "drift_per_sim_day_bps": 10,
+      "volatility_multiplier": 1.0,
+      "phase": 1.87406
+    },
+    {
+      "company_id": 24,
+      "symbol": "GS",
+      "base_price_cents": 36563,
+      "drift_per_sim_day_bps": 6,
+      "volatility_multiplier": 1.0,
+      "phase": 4.73746
+    },
+    {
+      "company_id": 25,
+      "symbol": "MS",
+      "base_price_cents": 12426,
+      "drift_per_sim_day_bps": -2,
+      "volatility_multiplier": 1.0,
+      "phase": 3.8424
+    },
+    {
+      "company_id": 26,
+      "symbol": "V",
+      "base_price_cents": 47328,
+      "drift_per_sim_day_bps": 5,
+      "volatility_multiplier": 1.0,
+      "phase": 2.39213
+    },
+    {
+      "company_id": 27,
+      "symbol": "MA",
+      "base_price_cents": 20635,
+      "drift_per_sim_day_bps": 4,
+      "volatility_multiplier": 1.0,
+      "phase": 3.81807
+    },
+    {
+      "company_id": 28,
+      "symbol": "AXP",
+      "base_price_cents": 25491,
+      "drift_per_sim_day_bps": 0,
+      "volatility_multiplier": 1.0,
+      "phase": 2.00886
+    },
+    {
+      "company_id": 29,
+      "symbol": "BLK",
+      "base_price_cents": 22970,
+      "drift_per_sim_day_bps": 11,
+      "volatility_multiplier": 1.0,
+      "phase": 4.09456
+    },
+    {
+      "company_id": 30,
+      "symbol": "SCHW",
+      "base_price_cents": 34636,
+      "drift_per_sim_day_bps": 4,
+      "volatility_multiplier": 1.0,
+      "phase": 5.41748
+    },
+    {
+      "company_id": 31,
+      "symbol": "JNJ",
+      "base_price_cents": 25232,
+      "drift_per_sim_day_bps": 2,
+      "volatility_multiplier": 0.9,
+      "phase": 2.29729
+    },
+    {
+      "company_id": 32,
+      "symbol": "UNH",
+      "base_price_cents": 49295,
+      "drift_per_sim_day_bps": -5,
+      "volatility_multiplier": 0.9,
+      "phase": 1.08601
+    },
+    {
+      "company_id": 33,
+      "symbol": "PFE",
+      "base_price_cents": 39553,
+      "drift_per_sim_day_bps": 9,
+      "volatility_multiplier": 0.9,
+      "phase": 5.81322
+    },
+    {
+      "company_id": 34,
+      "symbol": "MRK",
+      "base_price_cents": 25819,
+      "drift_per_sim_day_bps": 2,
+      "volatility_multiplier": 0.9,
+      "phase": 2.24416
+    },
+    {
+      "company_id": 35,
+      "symbol": "ABBV",
+      "base_price_cents": 16963,
+      "drift_per_sim_day_bps": 10,
+      "volatility_multiplier": 0.9,
+      "phase": 5.57457
+    },
+    {
+      "company_id": 36,
+      "symbol": "LLY",
+      "base_price_cents": 9361,
+      "drift_per_sim_day_bps": -1,
+      "volatility_multiplier": 0.9,
+      "phase": 2.99066
+    },
+    {
+      "company_id": 37,
+      "symbol": "TMO",
+      "base_price_cents": 11654,
+      "drift_per_sim_day_bps": 7,
+      "volatility_multiplier": 0.9,
+      "phase": 3.62465
+    },
+    {
+      "company_id": 38,
+      "symbol": "ABT",
+      "base_price_cents": 22124,
+      "drift_per_sim_day_bps": 7,
+      "volatility_multiplier": 0.9,
+      "phase": 2.50244
+    },
+    {
+      "company_id": 39,
+      "symbol": "DHR",
+      "base_price_cents": 20742,
+      "drift_per_sim_day_bps": -2,
+      "volatility_multiplier": 0.9,
+      "phase": 1.43038
+    },
+    {
+      "company_id": 40,
+      "symbol": "ISRG",
+      "base_price_cents": 40066,
+      "drift_per_sim_day_bps": 9,
+      "volatility_multiplier": 0.9,
+      "phase": 2.522
+    },
+    {
+      "company_id": 41,
+      "symbol": "KO",
+      "base_price_cents": 36603,
+      "drift_per_sim_day_bps": 11,
+      "volatility_multiplier": 0.65,
+      "phase": 0.62536
+    },
+    {
+      "company_id": 42,
+      "symbol": "PEP",
+      "base_price_cents": 39479,
+      "drift_per_sim_day_bps": -1,
+      "volatility_multiplier": 0.65,
+      "phase": 1.58269
+    },
+    {
+      "company_id": 43,
+      "symbol": "PG",
+      "base_price_cents": 43909,
+      "drift_per_sim_day_bps": 5,
+      "volatility_multiplier": 0.65,
+      "phase": 2.55741
+    },
+    {
+      "company_id": 44,
+      "symbol": "WMT",
+      "base_price_cents": 18973,
+      "drift_per_sim_day_bps": -3,
+      "volatility_multiplier": 0.65,
+      "phase": 5.95102
+    },
+    {
+      "company_id": 45,
+      "symbol": "COST",
+      "base_price_cents": 19874,
+      "drift_per_sim_day_bps": 6,
+      "volatility_multiplier": 0.65,
+      "phase": 0.52181
+    },
+    {
+      "company_id": 46,
+      "symbol": "PM",
+      "base_price_cents": 23452,
+      "drift_per_sim_day_bps": -4,
+      "volatility_multiplier": 0.65,
+      "phase": 2.09059
+    },
+    {
+      "company_id": 47,
+      "symbol": "CL",
+      "base_price_cents": 5278,
+      "drift_per_sim_day_bps": 0,
+      "volatility_multiplier": 0.65,
+      "phase": 4.68692
+    },
+    {
+      "company_id": 48,
+      "symbol": "MDLZ",
+      "base_price_cents": 41067,
+      "drift_per_sim_day_bps": 8,
+      "volatility_multiplier": 0.65,
+      "phase": 2.46876
+    },
+    {
+      "company_id": 49,
+      "symbol": "KMB",
+      "base_price_cents": 11442,
+      "drift_per_sim_day_bps": -5,
+      "volatility_multiplier": 0.65,
+      "phase": 1.56773
+    },
+    {
+      "company_id": 50,
+      "symbol": "GIS",
+      "base_price_cents": 48265,
+      "drift_per_sim_day_bps": 5,
+      "volatility_multiplier": 0.65,
+      "phase": 5.98832
+    },
+    {
+      "company_id": 51,
+      "symbol": "XOM",
+      "base_price_cents": 46800,
+      "drift_per_sim_day_bps": -5,
+      "volatility_multiplier": 1.3,
+      "phase": 1.77187
+    },
+    {
+      "company_id": 52,
+      "symbol": "CVX",
+      "base_price_cents": 46740,
+      "drift_per_sim_day_bps": -4,
+      "volatility_multiplier": 1.3,
+      "phase": 1.76685
+    },
+    {
+      "company_id": 53,
+      "symbol": "COP",
+      "base_price_cents": 10296,
+      "drift_per_sim_day_bps": 3,
+      "volatility_multiplier": 1.3,
+      "phase": 0.42635
+    },
+    {
+      "company_id": 54,
+      "symbol": "SLB",
+      "base_price_cents": 22376,
+      "drift_per_sim_day_bps": 1,
+      "volatility_multiplier": 1.3,
+      "phase": 4.11779
+    },
+    {
+      "company_id": 55,
+      "symbol": "EOG",
+      "base_price_cents": 23392,
+      "drift_per_sim_day_bps": -2,
+      "volatility_multiplier": 1.3,
+      "phase": 2.50197
+    },
+    {
+      "company_id": 56,
+      "symbol": "CAT",
+      "base_price_cents": 48548,
+      "drift_per_sim_day_bps": 3,
+      "volatility_multiplier": 1.0,
+      "phase": 2.69791
+    },
+    {
+      "company_id": 57,
+      "symbol": "DE",
+      "base_price_cents": 19004,
+      "drift_per_sim_day_bps": -3,
+      "volatility_multiplier": 1.0,
+      "phase": 4.39708
+    },
+    {
+      "company_id": 58,
+      "symbol": "HON",
+      "base_price_cents": 40964,
+      "drift_per_sim_day_bps": 1,
+      "volatility_multiplier": 1.0,
+      "phase": 0.35757
+    },
+    {
+      "company_id": 59,
+      "symbol": "GE",
+      "base_price_cents": 14068,
+      "drift_per_sim_day_bps": 4,
+      "volatility_multiplier": 1.0,
+      "phase": 1.00627
+    },
+    {
+      "company_id": 60,
+      "symbol": "RTX",
+      "base_price_cents": 10893,
+      "drift_per_sim_day_bps": 5,
+      "volatility_multiplier": 1.0,
+      "phase": 5.86088
+    },
+    {
+      "company_id": 61,
+      "symbol": "BA",
+      "base_price_cents": 12797,
+      "drift_per_sim_day_bps": -5,
+      "volatility_multiplier": 1.0,
+      "phase": 2.81632
+    },
+    {
+      "company_id": 62,
+      "symbol": "UPS",
+      "base_price_cents": 5549,
+      "drift_per_sim_day_bps": 2,
+      "volatility_multiplier": 1.0,
+      "phase": 1.3147
+    },
+    {
+      "company_id": 63,
+      "symbol": "UNP",
+      "base_price_cents": 36030,
+      "drift_per_sim_day_bps": 4,
+      "volatility_multiplier": 1.0,
+      "phase": 1.87612
+    },
+    {
+      "company_id": 64,
+      "symbol": "LMT",
+      "base_price_cents": 14621,
+      "drift_per_sim_day_bps": 9,
+      "volatility_multiplier": 1.0,
+      "phase": 3.63633
+    },
+    {
+      "company_id": 65,
+      "symbol": "ETN",
+      "base_price_cents": 39185,
+      "drift_per_sim_day_bps": 8,
+      "volatility_multiplier": 1.0,
+      "phase": 2.88089
+    },
+    {
+      "company_id": 66,
+      "symbol": "HD",
+      "base_price_cents": 31519,
+      "drift_per_sim_day_bps": 8,
+      "volatility_multiplier": 1.4,
+      "phase": 3.48124
+    },
+    {
+      "company_id": 67,
+      "symbol": "LOW",
+      "base_price_cents": 6047,
+      "drift_per_sim_day_bps": 7,
+      "volatility_multiplier": 1.4,
+      "phase": 2.94113
+    },
+    {
+      "company_id": 68,
+      "symbol": "MCD",
+      "base_price_cents": 19692,
+      "drift_per_sim_day_bps": 8,
+      "volatility_multiplier": 1.4,
+      "phase": 0.57626
+    },
+    {
+      "company_id": 69,
+      "symbol": "NKE",
+      "base_price_cents": 28613,
+      "drift_per_sim_day_bps": 11,
+      "volatility_multiplier": 1.4,
+      "phase": 3.81019
+    },
+    {
+      "company_id": 70,
+      "symbol": "SBUX",
+      "base_price_cents": 23560,
+      "drift_per_sim_day_bps": -5,
+      "volatility_multiplier": 1.4,
+      "phase": 3.04297
+    },
+    {
+      "company_id": 71,
+      "symbol": "DIS",
+      "base_price_cents": 4851,
+      "drift_per_sim_day_bps": -3,
+      "volatility_multiplier": 1.25,
+      "phase": 4.83515
+    },
+    {
+      "company_id": 72,
+      "symbol": "NFLX",
+      "base_price_cents": 11361,
+      "drift_per_sim_day_bps": 2,
+      "volatility_multiplier": 1.25,
+      "phase": 4.77406
+    },
+    {
+      "company_id": 73,
+      "symbol": "CMCSA",
+      "base_price_cents": 41582,
+      "drift_per_sim_day_bps": -5,
+      "volatility_multiplier": 1.25,
+      "phase": 2.34819
+    },
+    {
+      "company_id": 74,
+      "symbol": "T",
+      "base_price_cents": 30225,
+      "drift_per_sim_day_bps": -3,
+      "volatility_multiplier": 1.25,
+      "phase": 5.57305
+    },
+    {
+      "company_id": 75,
+      "symbol": "VZ",
+      "base_price_cents": 9730,
+      "drift_per_sim_day_bps": -4,
+      "volatility_multiplier": 1.25,
+      "phase": 2.08453
+    },
+    {
+      "company_id": 76,
+      "symbol": "NEE",
+      "base_price_cents": 37266,
+      "drift_per_sim_day_bps": 8,
+      "volatility_multiplier": 0.6,
+      "phase": 3.83476
+    },
+    {
+      "company_id": 77,
+      "symbol": "DUK",
+      "base_price_cents": 44196,
+      "drift_per_sim_day_bps": -1,
+      "volatility_multiplier": 0.6,
+      "phase": 0.69064
+    },
+    {
+      "company_id": 78,
+      "symbol": "SO",
+      "base_price_cents": 12715,
+      "drift_per_sim_day_bps": 0,
+      "volatility_multiplier": 0.6,
+      "phase": 2.79
+    },
+    {
+      "company_id": 79,
+      "symbol": "AMT",
+      "base_price_cents": 26169,
+      "drift_per_sim_day_bps": 0,
+      "volatility_multiplier": 0.8,
+      "phase": 3.07593
+    },
+    {
+      "company_id": 80,
+      "symbol": "PLD",
+      "base_price_cents": 39728,
+      "drift_per_sim_day_bps": 8,
+      "volatility_multiplier": 0.8,
+      "phase": 5.70353
+    }
+  ],
+  "pricing_contract": {
+    "authority": "Node.js marketSimulator only",
+    "same_timestamp_same_price": true,
+    "historical_prices_generated_on_demand": true,
+    "no_network_prices": true,
+    "per_tick_max_change_bps": 30,
+    "notes": "Use a bounded deterministic time-indexed process, do not apply a random delta on every HTTP request. Separate demo clock speed from real-world timestamp."
+  }
+}

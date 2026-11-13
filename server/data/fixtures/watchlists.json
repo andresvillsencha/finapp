@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "name": "AI & Cloud",
+    "symbols": [
+      "NVDA",
+      "MSFT",
+      "GOOGL",
+      "AMZN",
+      "CRM",
+      "NOW",
+      "ORCL",
+      "AVGO"
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Dividend Watch",
+    "symbols": [
+      "KO",
+      "PEP",
+      "PG",
+      "JNJ",
+      "DUK",
+      "SO",
+      "XOM",
+      "CVX"
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Volatility Watch",
+    "symbols": [
+      "TSLA",
+      "AMD",
+      "CRWD",
+      "BA",
+      "NFLX",
+      "META"
+    ]
+  }
+]

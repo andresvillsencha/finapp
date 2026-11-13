@@ -1,0 +1,20 @@
+[
+  {
+    "id": "DEMO_SP500",
+    "name": "Broad Market Benchmark (Simulated)",
+    "description": "Synthetic broad US equity index, NOT the real S&P 500",
+    "base_value": 1000,
+    "seed": 8149,
+    "drift_per_sim_day_bps": 3,
+    "volatility_multiplier": 0.8
+  },
+  {
+    "id": "DEMO_TECH",
+    "name": "Technology Benchmark (Simulated)",
+    "description": "Synthetic technology index, NOT an actual NASDAQ index",
+    "base_value": 1000,
+    "seed": 8169,
+    "drift_per_sim_day_bps": 5,
+    "volatility_multiplier": 1.4
+  }
+]
