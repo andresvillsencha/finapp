@@ -1,7 +1,7 @@
 /*
  * Styling of Portfolio Analytics (FinApp.view.analytics.AnalyticsView). Namespaced `.piq-*`;
- * the palette is documented in Application.scss. Card, legend, group header (`.piq-grp`)
- * and range rules are shared with the Dashboard and Holdings Explorer.
+ * the palette is documented in Application.scss. Card, legend and range rules are shared
+ * with the Dashboard and Holdings Explorer.
  */
 
 .piq-analytics {
@@ -28,69 +28,20 @@
     }
 }
 
-// ---- pivot fallback ------------------------------------------------------------------
+// ---- pivot grid ------------------------------------------------------------------------
 
 .piq-pivot-card.piq-card {
     margin-top: 8px;
 }
 
-// visible notice that the real Pivot Grid needs the Sencha package/license
-.piq-notice {
-    margin: 4px 0 12px;
-    padding: 10px 14px;
-    border: 1px solid #bfd3f6;
-    border-radius: 8px;
-    background: #eef4ff;
-    font-size: 13px;
-    line-height: 1.5;
-    color: #1e3a8a;
-
-    .x-fa {
-        margin-right: 6px;
-    }
-}
-
-.piq-total-cell {
-    font-weight: 700;
-}
-
-// grand total strip below the grid
-.piq-grand {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    margin-top: 10px;
-    padding: 10px 14px;
-    border-radius: 8px;
-    background: #e8f0fe;
+.piq-pivot {
     font-variant-numeric: tabular-nums;
 
-    .piq-grand-title {
-        margin-right: 20px;
-        font-weight: 700;
-        color: #0b1f4d;
+    .piq-pos {
+        color: #15803d;
     }
 
-    .piq-grand-cell {
-        margin-right: 22px;
-        font-size: 13px;
-
-        i {
-            margin-right: 6px;
-            font-style: normal;
-            color: #5b6b8c;
-        }
-
-        b {
-            color: #0b1f4d;
-        }
-
-        b.piq-pos {
-            color: #15803d;
-        }
-
-        b.piq-neg {
-            color: #b91c1c;
-        }
+    .piq-neg {
+        color: #b91c1c;
     }
 }

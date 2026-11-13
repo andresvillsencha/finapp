@@ -377,8 +377,8 @@ Update this table **only after the user approves a phase**.
 | Phase | Status | Approval / notes |
 |---|---|---|
 | 1 — Backend foundation | Approved | Approved by the user; 54/54 backend tests and 10/10 `demo:verify` checks passed. See `docs/DECISIONS.md` and `docs/API.md`. |
-| 2 — Ext JS foundation | Approved | Approved by the user after running the shell in the browser. Pivot Grid and Exporter packages are not installed; fallbacks are used. See `docs/DECISIONS.md`. |
+| 2 — Ext JS foundation | Approved | Approved by the user after running the shell in the browser. (Pivot and Exporter were not installed then; they were added later, see Phase 5b.) See `docs/DECISIONS.md`. |
 | 3 — Portfolio Dashboard | Approved | Approved by the user after running it in the browser; two layout fixes were applied (KPI row wrapper, performance chart fill). See `docs/DECISIONS.md`. |
 | 4 — Holdings Explorer | Approved | Approved by the user after running it in the browser. Backend additions: `group`/`groupDir`, `query`, `meta.totals`/`meta.groups` (56/56 tests). See `docs/DECISIONS.md` and `docs/API.md`. |
-| 5 — Portfolio Analytics | Approved | Approved by the user after running it. Pivot Grid/Exporter not installed: labelled fallback grid + server CSV. Backend additions: `layout=wide` pivot with server subtotals, `/api/exports/pivot.csv` (59/59 tests). Fixed `keepRawData` on the shared proxy (also repaired Holdings totals and Dashboard axis fit). See `docs/DECISIONS.md`. |
+| 5 — Portfolio Analytics | Approved | Approved by the user after running it (first with a labelled fallback grid; replaced afterwards by the real Pivot Grid and Exporter, see Phase 5b in `docs/DECISIONS.md`). Backend additions: `layout=wide` pivot with server subtotals, `/api/exports/pivot.csv` (59/59 tests). Fixed `keepRawData` on the shared proxy (also repaired Holdings totals and Dashboard axis fit). See `docs/DECISIONS.md`. |
 | 6 — Integration and QA | Not started | — |

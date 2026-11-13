@@ -6,7 +6,6 @@
  *
  *  - state:         'loading' (mask), 'ready', 'error' (banner with Retry, last data stays)
  *  - range:         range of the normalized performance chart
- *  - measure:       market_value | cost_basis | unrealized_pl (shown in the pivot columns)
  *  - sectorMode:    'pct' (share of each portfolio's equity) | 'value' (market value)
  *  - benchmarks:    'on' | 'off' (simulated benchmark lines in the performance chart)
  */
@@ -16,7 +15,6 @@ Ext.define('FinApp.view.analytics.AnalyticsModel', {
     alias: 'viewmodel.analytics',
 
     requires: [
-        'FinApp.store.PivotRows',
         'FinApp.store.Comparison',
         'FinApp.store.SectorComparison'
     ],
@@ -26,7 +24,6 @@ Ext.define('FinApp.view.analytics.AnalyticsModel', {
         errorMessage: '',
 
         range: '1Y',
-        measure: 'market_value',
         sectorMode: 'pct',
         benchmarks: 'on',
 
@@ -34,16 +31,12 @@ Ext.define('FinApp.view.analytics.AnalyticsModel', {
         comparisonNote: '',
         pivotCount: 0,
 
-        // Pre-formatted rows for the HTML legends and the grand total strip.
+        // Pre-formatted rows for the HTML legends.
         comparisonLegend: [],
-        sectorLegend: [],
-        grandRows: []
+        sectorLegend: []
     },
 
     stores: {
-        pivot: {
-            type: 'pivot-rows'
-        },
         comparison: {
             type: 'comparison'
         },
@@ -73,22 +66,6 @@ Ext.define('FinApp.view.analytics.AnalyticsModel', {
             return get('pivotCount') > 0;
         },
 
-        measureLabel: function (get) {
-            var labels = {
-                market_value: 'Market Value',
-                cost_basis: 'Cost Basis',
-                unrealized_pl: 'Unrealized P/L'
-            };
-
-            return labels[get('measure')] || '';
-        },
-
-        pivotTitleHtml: function (get) {
-            return '<div class="piq-card-title">Exposure by Sector → Company</div>' +
-                '<div class="piq-card-sub">Columns by portfolio • measure: ' +
-                Ext.String.htmlEncode(get('measureLabel')) + '</div>';
-        },
-
         comparisonSubHtml: function (get) {
             return '<div class="piq-card-title">Portfolio Performance Comparison</div>' +
                 '<div class="piq-card-sub">Normalized index, start of range = 100 • ' +
@@ -108,10 +85,6 @@ Ext.define('FinApp.view.analytics.AnalyticsModel', {
 
         sectorLegendCard: function (get) {
             return { rows: get('sectorLegend') };
-        },
-
-        grandCard: function (get) {
-            return { rows: get('grandRows') };
         }
     }
 });

@@ -51,11 +51,11 @@ Error (HTTP 400/404/409/500):
 | GET | `/api/holdings?portfolioId&page&start&limit&sort&filter&group&groupDir&query` | Open positions with derived values; `meta.totals` and `meta.groups` hold server sums |
 | GET | `/api/transactions?portfolioId&page&start&limit&sort&filter` | Transaction history (filters: portfolio, ticker, side, date range) |
 | POST | `/api/transactions` | Execute a simulated BUY/SELL (201) |
-| GET | `/api/analytics/pivot?portfolioId&layout` | `layout=flat` (default): flat position rows (sector, company, portfolio, market value, cost basis, unrealized P/L). `layout=wide`: one row per company with a column per portfolio and measure; `meta.groups` / `meta.grand` hold server-calculated subtotals and grand total |
+| GET | `/api/analytics/pivot?portfolioId&layout` | `layout=flat` (default): flat position rows (sector, company, portfolio, market value, cost basis, unrealized P/L), the source of the Ext JS Pivot Grid. `layout=wide`: one row per company with a column per portfolio and measure; `meta.groups` / `meta.grand` hold server-calculated subtotals and grand total |
 | GET | `/api/analytics/comparison?range` | Normalized series (start = 100): `portfolio_<id>` and `benchmark_<id>` fields; `meta.series` describes them |
 | GET | `/api/analytics/sector-comparison` | One row per sector with `portfolio_<id>` (value) and `portfolio_<id>_pct` fields |
 | GET | `/api/exports/holdings.csv?portfolioId&filter&sort` | CSV of all matching holdings (text cells protected against formula injection) |
-| GET | `/api/exports/pivot.csv?portfolioId&tick` | CSV of the wide pivot: company rows, a subtotal row per sector and a grand total row, all measures per portfolio |
+| GET | `/api/exports/pivot.csv?portfolioId&tick` | CSV of the wide pivot: company rows, a subtotal row per sector and a grand total row, all measures per portfolio (server-side alternative; the Analytics screen exports through the Exporter plugin) |
 
 ### Wide pivot (`/api/analytics/pivot?layout=wide`)
 

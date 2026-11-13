@@ -10,7 +10,7 @@ There are three screens in one shell:
 |---|---|
 | **Dashboard** | Portfolio value, gain/loss, indicative daily change, cost basis and cash; a value-over-time chart (1M / 3M / 6M / 1Y / All); sector allocation donut; top and bottom five holdings; a summary table per portfolio |
 | **Holdings Explorer** | A remotely sorted, filtered, paged and grouped grid of positions; company detail panel with a simulated price chart; a Transactions tab; the **Trade Simulator** (simulated Buy/Sell); CSV export |
-| **Portfolio Analytics** | Normalized portfolio performance comparison with simulated benchmarks; sector exposure by portfolio; a Sector → Company aggregation grid by portfolio with subtotals and totals; CSV export |
+| **Portfolio Analytics** | Normalized portfolio performance comparison with simulated benchmarks; sector exposure by portfolio; a **Pivot Grid** (Sector → Company, columns by portfolio, three measures) with a Configurator, drill-down and Excel/CSV export |
 
 Everything is **simulated**: prices follow a deterministic function of time, so the same company at the same simulated tick always has the same price, on every screen and after every server restart.
 
@@ -32,7 +32,7 @@ Everything is **simulated**: prices follow a deterministic function of time, so 
 ## Prerequisites
 
 - **Node.js** 20 or later (developed on v22) and **npm**.
-- **Sencha Cmd** and the **Sencha Ext JS 8.0 SDK** (licensed software). The SDK is expected under `ext-js/ext` and is **not redistributed** in this repository; the app is configured for the **Modern** toolkit with the **Font Awesome**, **Charts** and **UX** packages (see `ext-js/app.json`).
+- **Sencha Cmd** and the **Sencha Ext JS 8.0 SDK** (licensed software). The SDK is expected under `ext-js/ext` and is **not redistributed** in this repository; the app is configured for the **Modern** toolkit with the **Font Awesome**, **Charts**, **UX**, **Pivot** and **Exporter** packages (see `ext-js/app.json`; Pivot and Exporter are licensed Enterprise packages).
 - A modern desktop browser. The layout is desktop-first and responsive down to tablet width.
 
 No database, no external market-data service and no account are needed.
@@ -167,8 +167,8 @@ Every response that carries prices includes `meta.asOf` and `meta.tickIndex`. Ad
 | `GET /api/companies`, `/api/companies/:id/prices` | Company directory; simulated price series |
 | `GET /api/holdings` | Positions: remote `sort`, `filter`, `group`, `query`, paging; `meta.totals` and `meta.groups` |
 | `GET /api/transactions`, `POST /api/transactions` | History; execute a simulated Buy/Sell |
-| `GET /api/analytics/pivot`, `/comparison`, `/sector-comparison` | Pivot source (`layout=wide` adds subtotals), normalized comparison, sector exposure |
-| `GET /api/exports/holdings.csv`, `/api/exports/pivot.csv` | CSV exports |
+| `GET /api/analytics/pivot`, `/comparison`, `/sector-comparison` | Pivot source rows (`layout=wide` returns them pre-summed, with subtotals), normalized comparison, sector exposure |
+| `GET /api/exports/holdings.csv`, `/api/exports/pivot.csv` | Server-side CSV exports (the Holdings screen uses the first; the pivot exports through the Exporter plugin) |
 
 Examples:
 
@@ -194,14 +194,16 @@ About 5–8 minutes. Start both servers and open the app.
 3. **Holdings Explorer.** Filter to **Technology** (or search "bank"), sort by a column, and group **By sector**: the group headers show server-calculated totals. Select a position to open the detail panel (company, simulated price chart, position summary, recent trades).
 4. **Trade Simulator.** Click **Buy** (or **Buy More**), enter a quantity, execute. Show the confirmation with the server's price, the updated position, and (on the Transactions tab) the new trade. Try selling more shares than owned to see the rejection.
 5. **Back on the Dashboard.** Cash, cost basis and value reflect the trade; nothing was reloaded manually.
-6. **Portfolio Analytics.** Compare the portfolios and the simulated benchmarks (normalized to 100 at the start of the range), switch the sector chart between "% of portfolio" and market value, then show the Sector → Company grid by portfolio and switch its measure. Use **Export CSV**.
+6. **Portfolio Analytics.** Compare the portfolios and the simulated benchmarks (normalized to 100 at the start of the range), switch the sector chart between "% of portfolio" and market value, then show the **Pivot Grid**: collapse a sector, double-tap a value to see the positions behind it, open **Configure** to rearrange rows, columns and measures, and **Export** to Excel or CSV.
 7. **Finish** by explaining the persistent but resettable runtime journal (`server/data/runtime/`), the deterministic time-driven price function, and the disclaimer. Reset with `npm run demo:reset -- --yes`.
 
 ## Sencha packages and licensing
 
 - Ext JS 8 is licensed software; it is not included in this repository.
-- **Pivot Grid and Exporter are not installed in the SDK used here.** Instead of faking them, Portfolio Analytics shows a functional grouped aggregation grid with the notice "Pivot Grid requires the applicable Sencha package/license.", and exports use server-side CSV.
-- **To enable the real packages** (requires the applicable Sencha license): add the Enterprise `pivot` and `exporter` packages for the Modern toolkit to the workspace, list them in `requires` in `ext-js/app.json`, rebuild with Sencha Cmd, then replace the fallback grid in `FinApp.view.analytics.AnalyticsView` with a pivot grid (rows Sector → Company, columns Portfolio, measures Market Value, Cost Basis, Unrealized P/L, fed by `GET /api/analytics/pivot`) and use the exporter for the grids. Details are in `docs/DECISIONS.md` (Phase 5).
+- Portfolio Analytics uses the licensed **`pivot`** package (`Ext.pivot.Grid` with a local matrix, and its Configurator, DrillDown and Exporter plugins) and the **`exporter`** package. Both are listed in `requires` in `ext-js/app.json` and must be present in the SDK or workspace (`ext/packages`).
+- `pivot-locale` and `pivot-d3` are also listed in `requires` but the app does not use `pivot-d3` (it is only needed for the D3 pivot components) and can be removed from `requires` to save build size.
+- The pivot adds up the server's money values in the browser. The app registers a cent-exact sum (`FinApp.util.PivotAggregators`, named `piqSum`) so cells, subtotals and totals never drift from the server's exact-cent figures.
+- Excel and CSV exports are produced in the browser by the Exporter from the pivot as it is currently shown. The Holdings grid is paged on the server, so its export stays a server-side CSV of every matching row.
 - The Ext JS Charts package logs a console warning about Sencha's SVG download server when a chart is created. The app does not use chart download; the warning comes from the SDK and is harmless.
 
 ## Simulation disclosure and limitations
@@ -217,7 +219,6 @@ Limitations:
 - Portfolio performance series include cash; contributions and withdrawals are not modeled. Benchmarks are synthetic indices, not real ones.
 - The 1Y chart range is **simulated time** (the clock started on 2025-01-01), not wall-clock history.
 - Watchlists, market events and scenario/simulator controls exist as fixtures but have no screens. The mockups' risk metrics, risk analysis tab and scenario projections are intentionally not built (not in the specification).
-- The Pivot Grid and Exporter packages are not installed; the labelled fallbacks are described above.
 
 ## Troubleshooting
 
@@ -228,6 +229,7 @@ Limitations:
 | Browser CORS error | The page origin is not in `CORS_ORIGINS`; add it to `server/.env`. |
 | Trades disappeared | They were reset (`demo:reset`) or `server/data/runtime/` was deleted. |
 | `sencha app watch` cannot find the framework | The Ext JS SDK is not installed under `ext-js/ext`. |
+| Build error about `pivot` or `exporter` | The packages are listed in `ext-js/app.json` but missing from `ext/packages` (or the workspace). Install them, then restart `sencha app watch`. |
 
 ## Project structure
 

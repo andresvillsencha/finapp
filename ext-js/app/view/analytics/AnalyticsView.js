@@ -4,21 +4,25 @@
  *   header
  *   [error banner with Retry]
  *   Portfolio performance comparison (normalized, start = 100)  |  Sector exposure by portfolio
- *   Pivot (fallback): Sector -> Company, columns by Portfolio, measure switch, CSV export
+ *   Pivot grid: Sector -> Company, columns by Portfolio, three measures, Configure, Export
  *
- * The Pivot Grid and Exporter packages are NOT installed in this SDK, so the pivot is a
- * functional grouped aggregation grid (Ext.grid.Grid grouped by sector) with the visible
- * notice required by the specification. Subtotals and totals are calculated by the server
- * in exact cents; the browser only formats them. The charts are Ext.chart cartesian charts
- * whose series are built from the server's meta (which portfolios and benchmarks exist).
+ * The pivot is an Ext.pivot.Grid with a local matrix over the position rows of
+ * GET /api/analytics/pivot: subtotals and grand totals are calculated by the pivot (sums in
+ * whole cents, see FinApp.util.PivotAggregators), the Configurator plugin rearranges rows,
+ * columns and measures, DrillDown shows the positions behind a value, and the Exporter
+ * plugin exports Excel or CSV. The charts are Ext.chart cartesian charts whose series are
+ * built from the server's meta (which portfolios and benchmarks exist).
  */
 Ext.define('FinApp.view.analytics.AnalyticsView', {
     extend: 'Ext.Container',
     xtype: 'analytics-view',
 
     requires: [
-        'Ext.grid.Grid',
-        'Ext.grid.RowHeader',
+        'Ext.pivot.Grid',
+        'Ext.pivot.plugin.Configurator',
+        'Ext.pivot.plugin.DrillDown',
+        'Ext.pivot.plugin.Exporter',
+        'Ext.menu.Menu',
         'Ext.SegmentedButton',
         'Ext.LoadMask',
         'Ext.chart.CartesianChart',
@@ -29,6 +33,7 @@ Ext.define('FinApp.view.analytics.AnalyticsView', {
         'Ext.chart.series.Bar',
         'Ext.chart.interactions.ItemHighlight',
         'FinApp.util.Format',
+        'FinApp.util.PivotAggregators',
         'FinApp.view.analytics.AnalyticsController',
         'FinApp.view.analytics.AnalyticsModel'
     ],
@@ -267,7 +272,7 @@ Ext.define('FinApp.view.analytics.AnalyticsView', {
             }]
         }]
     }, {
-        // ---- pivot (labelled fallback) ---------------------------------------
+        // ---- pivot grid ----------------------------------------------------------
         xtype: 'container',
         cls: 'piq-card piq-pivot-card',
         layout: {
@@ -284,126 +289,227 @@ Ext.define('FinApp.view.analytics.AnalyticsView', {
             items: [{
                 xtype: 'component',
                 flex: 1,
-                minWidth: 240,
-                bind: {
-                    html: '{pivotTitleHtml}'
-                }
-            }, {
-                xtype: 'segmentedbutton',
-                cls: 'piq-range',
-                bind: '{measure}',
-                items: [
-                    { text: 'Market Value', value: 'market_value' },
-                    { text: 'Cost Basis', value: 'cost_basis' },
-                    { text: 'Unrealized P/L', value: 'unrealized_pl' }
-                ]
+                minWidth: 260,
+                html: '<div class="piq-card-title">Exposure by Sector → Company</div>' +
+                    '<div class="piq-card-sub">Columns by portfolio • Market Value, Cost Basis and ' +
+                    'Unrealized P/L • double-tap a value to see the positions behind it</div>'
             }, {
                 xtype: 'button',
-                text: 'Export CSV',
-                iconCls: 'x-fa fa-file-arrow-down',
+                text: 'Configure',
+                iconCls: 'x-fa fa-sliders',
                 margin: '0 0 0 12',
-                tooltip: 'Download the pivot (all measures, subtotals and grand total) as CSV; the Exporter package is not installed',
-                handler: 'onExport'
-            }]
-        }, {
-            xtype: 'component',
-            cls: 'piq-notice',
-            html: '<span class="x-fa fa-circle-info"></span> ' +
-                '<b>Pivot Grid requires the applicable Sencha package/license.</b> ' +
-                'This is a functional grouped aggregation grid instead: rows by Sector → Company, ' +
-                'columns by Portfolio. Subtotals and totals are calculated by the server.'
-        }, {
-            xtype: 'grid',
-            reference: 'pivotGrid',
-            cls: 'piq-grid',
-            height: 520,
-            bind: {
-                store: '{pivot}'
-            },
-            columnLines: false,
-            loadingText: 'Loading the pivot…',
-            emptyText: '<div class="piq-empty">No open positions in the selected portfolio.</div>',
-            selectable: false,
-
-            // Group header = the sector with its server-calculated subtotal per portfolio.
-            groupHeader: {
-                xtype: 'rowheader',
-                tpl: [
-                    '<div class="piq-grp">',
-                    '<span class="piq-grp-name">{html} <i>{[this.count(values)]}</i></span>',
-                    '<span class="piq-grp-sum">{[this.subtotals(values)]}</span>',
-                    '</div>',
-                    {
-                        meta: function (values) {
-                            var first = values.children && values.children[0],
-                                store = first && first.store,
-                                reader = store && store.getProxy().getReader();
-
-                            return {
-                                data: reader && reader.rawData && reader.rawData.meta,
-                                measure: (store && store.piqMeasure) || 'market_value'
-                            };
-                        },
-                        count: function (values) {
-                            var m = this.meta(values),
-                                bucket = m.data && m.data.groups ? m.data.groups[values.name] : null,
-                                n = bucket ? bucket.count : values.count;
-
-                            return Ext.String.htmlEncode(n + (n === 1 ? ' company' : ' companies'));
-                        },
-                        subtotals: function (values) {
-                            var m = this.meta(values),
-                                F = FinApp.util.Format,
-                                bucket = m.data && m.data.groups ? m.data.groups[values.name] : null,
-                                html = '',
-                                v;
-
-                            if (!bucket) {
-                                return '';
-                            }
-
-                            Ext.Array.each(m.data.portfolios, function (p) {
-                                var v = bucket[p.key + '_' + m.measure];
-
-                                html += Ext.String.htmlEncode(p.name) + ' <b class="' + F.measureCls(m.measure, v) + '">' +
-                                    Ext.String.htmlEncode(F.measure(m.measure, v)) + '</b> &nbsp;•&nbsp; ';
-                            });
-
-                            v = bucket['total_' + m.measure];
-
-                            return html + 'Total <b class="' + F.measureCls(m.measure, v) + '">' +
-                                Ext.String.htmlEncode(F.measure(m.measure, v)) + '</b>';
-                        }
-                    }
-                ]
-            },
-
-            // The portfolio and total columns depend on the data; the controller adds them.
-            columns: [{
-                text: 'Company',
-                dataIndex: 'company',
-                flex: 2,
-                minWidth: 220
+                tooltip: 'Choose the rows, columns and measures of the pivot',
+                handler: 'onConfigure'
             }, {
-                text: 'Ticker',
-                dataIndex: 'symbol',
-                width: 90,
-                cell: {
-                    userCls: 'piq-ticker'
+                xtype: 'button',
+                text: 'Export',
+                iconCls: 'x-fa fa-file-arrow-down',
+                margin: '0 0 0 8',
+                tooltip: 'Export the pivot as it is shown (simulated data)',
+                menu: {
+                    items: [{
+                        text: 'Excel (.xlsx)',
+                        iconCls: 'x-fa fa-file-excel',
+                        handler: 'onExportXlsx'
+                    }, {
+                        text: 'CSV',
+                        iconCls: 'x-fa fa-file-csv',
+                        handler: 'onExportCsv'
+                    }]
                 }
             }]
         }, {
             xtype: 'component',
-            cls: 'piq-grand',
+            cls: 'piq-empty',
+            hidden: true,
             bind: {
-                data: '{grandCard}'
+                hidden: '{hasPivotRows}'
             },
-            tpl: [
-                '<span class="piq-grand-title">Grand total</span>',
-                '<tpl for="rows">',
-                '<span class="piq-grand-cell"><i>{label:htmlEncode}</i><b class="{cls}">{value:htmlEncode}</b></span>',
-                '</tpl>'
-            ]
+            html: 'No open positions in the selected portfolio.'
+        }, {
+            xtype: 'pivotgrid',
+            reference: 'pivotGrid',
+            cls: 'piq-grid piq-pivot',
+            height: 560,
+            columnLines: false,
+            startRowGroupsCollapsed: false,
+
+            // The screen shows its own mask on first loads; refreshes every tick stay silent.
+            enableLoadMask: false,
+
+            plugins: {
+                // rearrange rows, columns and measures (also: long-press a column header)
+                pivotconfigurator: {
+                    fields: [
+                        { dataIndex: 'sector', header: 'Sector', settings: { allowed: ['leftAxis', 'topAxis'] } },
+                        { dataIndex: 'company', header: 'Company', settings: { allowed: ['leftAxis', 'topAxis'] } },
+                        { dataIndex: 'symbol', header: 'Ticker', settings: { allowed: ['leftAxis', 'topAxis'] } },
+                        { dataIndex: 'portfolio_name', header: 'Portfolio', sortIndex: 'portfolio_id', settings: { allowed: ['leftAxis', 'topAxis'] } },
+                        {
+                            dataIndex: 'market_value',
+                            header: 'Market Value',
+                            aggregator: 'piqSum',
+                            settings: { allowed: ['aggregate'], aggregators: ['piqSum', 'avg', 'min', 'max'] }
+                        },
+                        {
+                            dataIndex: 'cost_basis',
+                            header: 'Cost Basis',
+                            aggregator: 'piqSum',
+                            settings: { allowed: ['aggregate'], aggregators: ['piqSum', 'avg', 'min', 'max'] }
+                        },
+                        {
+                            dataIndex: 'unrealized_pl',
+                            header: 'Unrealized P/L',
+                            aggregator: 'piqSum',
+                            settings: { allowed: ['aggregate'], aggregators: ['piqSum', 'avg', 'min', 'max'] }
+                        },
+                        {
+                            dataIndex: 'quantity',
+                            header: 'Shares',
+                            aggregator: 'sum',
+                            settings: { allowed: ['aggregate'], aggregators: ['sum', 'avg', 'min', 'max'] }
+                        }
+                    ]
+                },
+                // double-tap a value: the positions that were aggregated into it
+                pivotdrilldown: {
+                    width: 760,
+                    columns: [{
+                        text: 'Ticker',
+                        dataIndex: 'symbol',
+                        width: 90
+                    }, {
+                        text: 'Company',
+                        dataIndex: 'company',
+                        flex: 1,
+                        minWidth: 170
+                    }, {
+                        text: 'Portfolio',
+                        dataIndex: 'portfolio_name',
+                        width: 170
+                    }, {
+                        text: 'Shares',
+                        dataIndex: 'quantity',
+                        width: 90,
+                        align: 'right',
+                        renderer: function (value) {
+                            return FinApp.util.Format.integer(value);
+                        }
+                    }, {
+                        text: 'Market Value',
+                        dataIndex: 'market_value',
+                        width: 130,
+                        align: 'right',
+                        renderer: function (value) {
+                            return FinApp.util.Format.usd(value);
+                        }
+                    }, {
+                        text: 'Cost Basis',
+                        dataIndex: 'cost_basis',
+                        width: 130,
+                        align: 'right',
+                        renderer: function (value) {
+                            return FinApp.util.Format.usd(value);
+                        }
+                    }, {
+                        text: 'Unrealized P/L',
+                        dataIndex: 'unrealized_pl',
+                        width: 140,
+                        align: 'right',
+                        cell: {
+                            encodeHtml: false
+                        },
+                        renderer: function (value) {
+                            var F = FinApp.util.Format;
+
+                            return '<span class="' + F.pnlCls(value) + '">' +
+                                Ext.String.htmlEncode(F.signedUsd(value)) + '</span>';
+                        }
+                    }]
+                },
+                pivotexporter: true
+            },
+
+            matrix: {
+                type: 'local',
+                store: {
+                    type: 'pivot-rows'
+                },
+                viewLayoutType: 'outline',
+                rowSubTotalsPosition: 'first',
+                rowGrandTotalsPosition: 'last',
+                colSubTotalsPosition: 'none',
+                colGrandTotalsPosition: 'last',
+                textGrandTotalTpl: 'Grand total',
+
+                leftAxis: [{
+                    dataIndex: 'sector',
+                    header: 'Sector',
+                    width: 210
+                }, {
+                    dataIndex: 'company',
+                    header: 'Company',
+                    width: 230
+                }],
+
+                topAxis: [{
+                    dataIndex: 'portfolio_name',
+                    sortIndex: 'portfolio_id',
+                    header: 'Portfolio'
+                }],
+
+                // Sums are done in whole cents (FinApp.util.PivotAggregators), like the backend.
+                aggregate: [{
+                    dataIndex: 'market_value',
+                    header: 'Market Value',
+                    aggregator: 'piqSum',
+                    align: 'right',
+                    width: 140,
+                    renderer: function (value) {
+                        return FinApp.util.Format.usd(value);
+                    },
+                    exportStyle: {
+                        format: 'Currency',
+                        alignment: {
+                            horizontal: 'Right'
+                        }
+                    }
+                }, {
+                    dataIndex: 'cost_basis',
+                    header: 'Cost Basis',
+                    aggregator: 'piqSum',
+                    align: 'right',
+                    width: 140,
+                    renderer: function (value) {
+                        return FinApp.util.Format.usd(value);
+                    },
+                    exportStyle: {
+                        format: 'Currency',
+                        alignment: {
+                            horizontal: 'Right'
+                        }
+                    }
+                }, {
+                    dataIndex: 'unrealized_pl',
+                    header: 'Unrealized P/L',
+                    aggregator: 'piqSum',
+                    align: 'right',
+                    width: 140,
+                    // sign and colour (the pivot cell does not encode HTML; only formatted numbers go in)
+                    renderer: function (value) {
+                        var F = FinApp.util.Format;
+
+                        return '<span class="' + F.pnlCls(value) + '">' +
+                            Ext.String.htmlEncode(F.signedUsd(value)) + '</span>';
+                    },
+                    exportStyle: {
+                        format: 'Currency',
+                        alignment: {
+                            horizontal: 'Right'
+                        }
+                    }
+                }]
+            }
         }]
     }, {
         xtype: 'component',

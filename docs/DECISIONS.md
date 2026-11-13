@@ -11,7 +11,7 @@ All figures in PortfolioIQ are **simulated**. This file records choices made whe
 | Fixtures | All nine files are present in `server/data/fixtures/`: 80 companies (10 sectors), 5 portfolios, 90 baseline transactions, 6 scenarios, 2 benchmarks, 3 watchlists, 30 events. They validate cleanly and are never written by the app. |
 | Runtime | `server/data/runtime/` exists, is untracked, and holds only the simulated-trade journal. |
 | Frontend | Not started in Phase 1. `ext-js/` is still the default Sencha template (app `FinApp`, Modern toolkit). |
-| Pivot / Exporter | Not checked in Phase 1 (frontend). A server-side CSV export fallback exists. |
+| Pivot / Exporter | Not checked in Phase 1 (frontend). A server-side CSV export fallback existed. (Superseded: both packages were installed later, see Phase 5b.) |
 
 ## Confirmed by the user
 
@@ -60,8 +60,8 @@ All figures in PortfolioIQ are **simulated**. This file records choices made whe
 |---|---|
 | Toolkit / version | Ext JS **8.0.0.43**, Modern toolkit, theme `theme-material`, app `FinApp` (namespace `FinApp`), workspace framework path `ext` |
 | Enabled packages | `font-awesome` (FA 7.0.0), `charts`, `ux` (unchanged; `app.json` was **not** modified) |
-| Pivot Grid | **Not installed.** `ext/packages` contains `amf, charts, core, font-awesome, font-ext, font-ios, font-pictos, google, legacy, qr-code, signature, soap, ux`. No `Ext.pivot.*` classes exist. Phase 5 uses the labelled grouped-aggregation fallback ("Pivot Grid requires the applicable Sencha package/license."). |
-| Exporter | **Not installed** (no `Ext.exporter.*` / `GridExporter`). Phase 4/5 use the server CSV export (`/api/exports/holdings.csv`) and a client download of server data. |
+| Pivot Grid | *At the time of Phase 2:* **not installed.** (Superseded: installed later, see Phase 5b.) `ext/packages` contains `amf, charts, core, font-awesome, font-ext, font-ios, font-pictos, google, legacy, qr-code, signature, soap, ux`. No `Ext.pivot.*` classes exist. Phase 5 uses the labelled grouped-aggregation fallback ("Pivot Grid requires the applicable Sencha package/license."). |
+| Exporter | *At the time of Phase 2:* **not installed** (superseded, see Phase 5b) (no `Ext.exporter.*` / `GridExporter`). Phase 4/5 use the server CSV export (`/api/exports/holdings.csv`) and a client download of server data. |
 | Template demo | The generated Personnel model/store/list and tab shell were replaced (the four demo files `model/Personnel.js`, `store/Personnel.js`, `view/main/List.js`, `view/main/List.scss` were deleted; nothing else referenced them). |
 
 To enable the real Pivot Grid / Exporter later, the licensed `pivot` and `exporter` packages must be installed in the Sencha workspace and added to `requires` in `ext-js/app.json` (a user-run Sencha Cmd step); the app does not redistribute them.
@@ -177,7 +177,7 @@ Claude cannot run Sencha Cmd, so the screen was **not built or opened**. Checks 
 
 ## Phase 5 — Portfolio Analytics
 
-### Pivot Grid and Exporter availability (verified)
+### Pivot Grid and Exporter availability (as verified in Phase 5; superseded by Phase 5b below)
 
 The installed SDK (Ext JS 8.0.0.43) contains no `pivot` or `exporter` package (`ext/packages` holds amf, charts, core, font-*, google, legacy, qr-code, signature, soap, ux). Per `CLAUDE.md` the screen therefore uses the **labelled fallback**: a functional grouped aggregation grid with the visible notice "Pivot Grid requires the applicable Sencha package/license.", and the server-side CSV export.
 
@@ -249,7 +249,42 @@ The app was run in the built-in browser against a **throwaway backend** (the cur
 ### Remaining known issues and limitations
 
 - The Ext JS Charts package logs a warning about Sencha's SVG download server for each chart (SDK behavior; chart download is not used).
-- Pivot Grid and Exporter are not installed: labelled fallback grid and server CSV (see Phase 5 for how to enable the real packages).
+- Pivot Grid and Exporter: installed after Phase 5 and adopted (see Phase 5b).
 - No automated browser test suite; the demo walkthrough in the README is the manual QA script. The backend has 59 automated tests.
 - The visual QA covered desktop and tablet widths; phone widths were not a goal.
 - Watchlists, market events and scenario controls are fixtures without screens (out of scope for the three core screens).
+
+## Phase 5b — Real Pivot Grid (replaces the labelled fallback)
+
+After Phase 5 the licensed `pivot` and `exporter` packages were added to the SDK (`ext/packages`) and to `requires` in `ext-js/app.json` (`pivot`, `pivot-locale`, `pivot-d3`, `exporter`). Availability was verified in the sources (`Ext.pivot.Grid` Modern, local and remote matrices, Configurator / DrillDown / Exporter plugins, `Ext.exporter.*`), and the new grid was verified in the running app.
+
+### What changed
+
+| | Fallback grid (Phase 5) | Pivot Grid (now) |
+|---|---|---|
+| Component | `Ext.grid.Grid` grouped by sector | `Ext.pivot.Grid`, local matrix |
+| Data | `/api/analytics/pivot?layout=wide` (server-summed) | `/api/analytics/pivot` flat rows, one per position (store `FinApp.store.PivotRows`) |
+| Rows / columns | Sector → Company / Portfolio | The same, rearrangeable in the Configurator |
+| Measures | One at a time (segmented switch) | Market Value, Cost Basis and Unrealized P/L side by side, changeable in the Configurator |
+| Subtotals and totals | Calculated by the server | Calculated by the pivot, in whole cents (see below) |
+| Extras | none | Expand/collapse, axis sorting, double-tap drill-down to the positions, Configure panel |
+| Export | Server CSV | Exporter plugin: Excel (.xlsx) or CSV, from the layout as shown |
+| Notice | "Pivot Grid requires the applicable Sencha package/license." | Removed |
+
+### Decisions
+
+1. **Local matrix.** The pivot groups and sums the position rows in the browser (a pivot's job). `Ext.pivot.matrix.Remote` would need a custom server implementing its protocol; not worth it for 75 positions. This is the one place where the UI adds money up, accepted because section 3.3 of `CLAUDE.md` asks for a Pivot Grid.
+2. **Cent-exact sums.** `FinApp.util.PivotAggregators` registers `Ext.pivot.Aggregators.piqSum` (sum of whole cents, divided once), so cells, subtotals and grand totals cannot drift by a fraction of a cent. The pivot's 1,188 cells (grand total, 10 sector subtotals, 55 companies by 18 columns) were compared with the server's own exact totals in the running app: no difference. The backend tests keep the server-side wide layout as the reference.
+3. **Collapsed groups survive refreshes.** Every reload makes the matrix rebuild its axes with all groups expanded. The controller remembers collapsed groups by name path and collapses them again on `pivotdone`; scroll position was also verified to survive. The pivot's own load mask is disabled (`enableLoadMask: false`) so the 5-second refresh does not flash; the screen's mask covers first loads and scope changes.
+4. **Configurator** (`pivotconfigurator`): fields for Sector, Company, Ticker, Portfolio (rows or columns) and Market Value, Cost Basis, Unrealized P/L, Shares (values), with `piqSum` as the money sum. **DrillDown** (`pivotdrilldown`) has proper columns (ticker, company, portfolio, shares, money). **Exporter** (`pivotexporter`) exports Excel and CSV; the file title carries "simulated data".
+5. **Holdings export unchanged.** The Holdings grid is paged on the server, so the Exporter would only export the loaded page; its server CSV (all matching rows) stays.
+6. **Server endpoints kept.** `layout=wide` and `GET /api/exports/pivot.csv` remain in the API (tested, documented) but the screen no longer uses them.
+7. **`pivot-d3`** is in `requires` but unused; it can be removed to reduce build size.
+
+### Verified
+
+All pivot checks were made in the running app against a throwaway backend: classes loaded, 75 rows grouped into 10 sectors and 55 companies by 5 portfolios and 3 measures plus totals; every cell equal to the server's; collapse persisting across ticks; Configure panel (all fields, values, row and column labels); CSV content from the Exporter (sector "Total" rows and a grand total); an Excel document built and saved without errors; double-tap drill-down; an empty portfolio (no rows, notice shown); no console errors.
+
+### Not verified
+
+A production build (`sencha app build`) was not run (Sencha Cmd is not available to Claude). Excel downloads were not opened in Excel. Dragging fields in the Configurator and applying a new layout (the panel opens and lists the fields) was not exercised end to end.

@@ -21,7 +21,8 @@
         "ux",
         "pivot",
         "pivot-locale",
-        "pivot-d3"
+        "pivot-d3",
+        "exporter"
     ],
 
     /**

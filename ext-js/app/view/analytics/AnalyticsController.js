@@ -2,21 +2,20 @@
  * Controller of Portfolio Analytics.
  *
  * Data (all from the REST API, nothing calculated here):
- *   GET /api/analytics/pivot?layout=wide   rows Sector -> Company, a column per portfolio and
- *                                          measure; meta.groups (sector subtotals) and
- *                                          meta.grand (grand total) are summed by the server
+ *   GET /api/analytics/pivot               one row per position: the source of the pivot grid,
+ *                                          whose local matrix groups (Sector -> Company by
+ *                                          Portfolio) and sums them in whole cents
  *   GET /api/analytics/comparison          normalized series (start of range = 100) for every
  *                                          portfolio and the simulated benchmarks
  *   GET /api/analytics/sector-comparison   equity by sector for every portfolio
- *   GET /api/exports/pivot.csv             CSV fallback (the Exporter package is not installed)
  *
  * Coherence: the three requests of one refresh carry the same `tick`. The series of both
  * charts and the pivot columns are built from the server's meta (which portfolios and
  * benchmarks exist), never hard-coded.
  *
  * Refresh: on a new tick (piqsnapshot), when the portfolio selection or the range changes,
- * after a trade (piqtrade) and when the screen is shown. Switching the measure, the sector
- * mode or the benchmarks only re-renders what is already loaded. Requests are coalesced; a
+ * after a trade (piqtrade) and when the screen is shown. Switching the sector mode or the
+ * benchmarks only re-renders what is already loaded. Requests are coalesced; a
  * refresh of the same scope is silent (no mask).
  */
 Ext.define('FinApp.view.analytics.AnalyticsController', {
@@ -42,7 +41,6 @@ Ext.define('FinApp.view.analytics.AnalyticsController', {
         vm.bind('{activeScreen}', me.refresh, me);
 
         // Client-side re-renders of data that is already loaded.
-        vm.bind('{measure}', me.onMeasureChange, me);
         vm.bind('{sectorMode}', me.onSectorModeChange, me);
         vm.bind('{benchmarks}', me.onBenchmarksChange, me);
     },
@@ -120,9 +118,8 @@ Ext.define('FinApp.view.analytics.AnalyticsController', {
             vm.set('state', 'loading');
         }
 
-        me.loadStore(vm.getStore('pivot'), {
+        me.loadStore(me.pivotStore(), {
             portfolioId: scope,
-            layout: 'wide',
             tick: tick
         });
         me.loadStore(vm.getStore('comparison'), {
@@ -193,126 +190,156 @@ Ext.define('FinApp.view.analytics.AnalyticsController', {
         }
     },
 
-    // ---- pivot (grouped aggregation fallback) -----------------------------------------
+    // ---- pivot grid --------------------------------------------------------------------
+
+    /**
+     * The store behind the pivot grid: its local matrix owns it. Loading it (with the portfolio
+     * and tick as parameters) makes the matrix group and sum the rows again.
+     */
+    pivotStore: function () {
+        var matrix = this.lookup('pivotGrid').getMatrix();
+
+        return matrix ? matrix.store : null;
+    },
+
+    /**
+     * Collapsed row groups survive the refresh: every reload makes the pivot rebuild its axes
+     * (all groups expanded), so the collapsed groups are remembered by name path and collapsed
+     * again when the matrix has finished.
+     */
+    initPivot: function () {
+        var me = this,
+            grid = me.lookup('pivotGrid');
+
+        if (me.collapsedRows) {
+            return;
+        }
+
+        me.collapsedRows = {};
+
+        if (grid) {
+            grid.on({
+                pivotgroupexpand: me.onPivotGroupToggle,
+                pivotgroupcollapse: me.onPivotGroupToggle,
+                pivotdone: me.onPivotDone,
+                scope: me
+            });
+        }
+    },
+
+    /** Visit every row group (an item with children) of the left axis with its name path. */
+    eachRowGroup: function (fn) {
+        var grid = this.lookup('pivotGrid'),
+            matrix = grid ? grid.getMatrix() : null,
+            visit;
+
+        if (!matrix || !matrix.leftAxis) {
+            return;
+        }
+
+        visit = function (items, prefix) {
+            Ext.Array.each(items || [], function (item) {
+                var path = prefix + '/' + item.name;
+
+                if (item.children && item.children.length) {
+                    fn(item, path);
+                    visit(item.children, path);
+                }
+            });
+        };
+
+        visit(matrix.leftAxis.getTree(), '');
+    },
+
+    onPivotGroupToggle: function (matrix, type, group) {
+        var me = this;
+
+        if (me.restoringPivot || type !== 'row' || !group) {
+            return;
+        }
+
+        me.eachRowGroup(function (item, path) {
+            if (item === group) {
+                if (group.expanded) {
+                    delete me.collapsedRows[path];
+                } else {
+                    me.collapsedRows[path] = true;
+                }
+            }
+        });
+    },
+
+    onPivotDone: function () {
+        var me = this;
+
+        if (me.restoringPivot || me.destroyed) {
+            return;
+        }
+
+        me.restoringPivot = true;
+
+        me.eachRowGroup(function (item, path) {
+            if (me.collapsedRows[path] && item.expanded) {
+                item.collapse();
+            }
+        });
+
+        me.restoringPivot = false;
+    },
 
     applyPivot: function () {
         var me = this,
-            vm = me.getViewModel(),
-            store = vm.getStore('pivot'),
-            raw = store.getProxy().getReader().rawData;
+            store = me.pivotStore();
 
-        me.pivotMeta = raw && raw.meta ? raw.meta : null;
-        vm.set('pivotCount', store.getCount());
-        store.piqMeasure = vm.get('measure');
-        me.buildPivotColumns();
-        me.buildGrandRows();
+        // The grid exists now: start remembering collapsed groups.
+        me.initPivot();
+
+        me.getViewModel().set('pivotCount', store ? store.getCount() : 0);
     },
 
-    /** The columns depend on the portfolios in the data and on the selected measure. */
-    buildPivotColumns: function () {
-        var me = this,
-            meta = me.pivotMeta,
-            measure = me.getViewModel().get('measure'),
-            columns;
+    /** Rearrange rows, columns and measures (the Configurator plugin's panel). */
+    onConfigure: function () {
+        var grid = this.lookup('pivotGrid');
 
-        if (!meta) {
-            return;
+        if (grid && Ext.isFunction(grid.showConfigurator)) {
+            grid.showConfigurator();
         }
-
-        columns = [{
-            text: 'Company',
-            dataIndex: 'company',
-            flex: 2,
-            minWidth: 220
-        }, {
-            text: 'Ticker',
-            dataIndex: 'symbol',
-            width: 90,
-            cell: {
-                userCls: 'piq-ticker'
-            }
-        }];
-
-        Ext.Array.each(meta.portfolios, function (p) {
-            columns.push(me.measureColumn(p.name, p.key + '_' + measure, measure, false));
-        });
-        columns.push(me.measureColumn('Total', 'total_' + measure, measure, true));
-
-        me.lookup('pivotGrid').setColumns(columns);
     },
 
-    measureColumn: function (text, dataIndex, measure, isTotal) {
-        return {
-            text: text,
-            dataIndex: dataIndex,
-            width: 150,
-            align: 'right',
-            cell: {
-                encodeHtml: false,
-                userCls: isTotal ? 'piq-total-cell' : ''
-            },
-            renderer: function (value) {
-                var F = FinApp.util.Format;
-
-                return '<span class="' + F.measureCls(measure, value) + '">' +
-                    Ext.String.htmlEncode(F.measure(measure, value)) + '</span>';
-            }
-        };
+    onExportXlsx: function () {
+        this.exportPivot('xlsx', 'xlsx');
     },
 
-    /** Grand total strip below the grid (server-calculated). */
-    buildGrandRows: function () {
-        var me = this,
-            F = FinApp.util.Format,
-            meta = me.pivotMeta,
-            measure = me.getViewModel().get('measure'),
-            rows = [],
-            v;
-
-        if (meta && meta.grand) {
-            Ext.Array.each(meta.portfolios, function (p) {
-                v = meta.grand[p.key + '_' + measure];
-                rows.push({ label: p.name, value: F.measure(measure, v), cls: F.measureCls(measure, v) });
-            });
-            v = meta.grand['total_' + measure];
-            rows.push({ label: 'Total', value: F.measure(measure, v), cls: F.measureCls(measure, v) });
-        }
-
-        me.getViewModel().set('grandRows', rows);
+    onExportCsv: function () {
+        this.exportPivot('csv', 'csv');
     },
 
-    onMeasureChange: function (measure) {
+    /**
+     * Export the pivot as it is shown, with the Exporter package (Excel or CSV). The file is
+     * built in the browser from the current layout (including the configurator's changes).
+     */
+    exportPivot: function (type, extension) {
         var me = this,
             grid = me.lookup('pivotGrid'),
-            store = me.getViewModel().getStore('pivot');
+            promise;
 
-        if (!me.pivotMeta || me.destroyed) {
+        if (!grid || !Ext.isFunction(grid.saveDocumentAs)) {
             return;
         }
 
-        store.piqMeasure = measure;
-        me.buildPivotColumns();
-        me.buildGrandRows();
+        promise = grid.saveDocumentAs({
+            type: type,
+            title: 'PortfolioIQ pivot (simulated data)',
+            fileName: 'portfolioiq-pivot.' + extension
+        });
 
-        // Group headers read the measure when they are rendered.
-        if (grid && Ext.isFunction(grid.refresh)) {
-            grid.refresh();
+        if (promise && Ext.isFunction(promise.then)) {
+            promise.then(null, function () {
+                if (!me.destroyed) {
+                    Ext.toast('The pivot could not be exported.', 4000);
+                }
+            });
         }
-    },
-
-    /** CSV fallback: the server builds the file for the same portfolio and tick. */
-    onExport: function () {
-        var me = this,
-            vm = me.getViewModel(),
-            tick = Ext.isNumber(me.latestTick) ? me.latestTick : vm.get('tickIndex'),
-            params = { portfolioId: String(vm.get('portfolioId')) };
-
-        if (tick !== null && tick !== undefined) {
-            params.tick = tick;
-        }
-
-        // A plain navigation downloads the file (the response is an attachment).
-        window.location.assign(FinApp.util.Api.url('/exports/pivot.csv') + '?' + Ext.Object.toQueryString(params));
     },
 
     // ---- normalized performance comparison ---------------------------------------------
