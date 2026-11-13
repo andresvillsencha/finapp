@@ -46,6 +46,8 @@ Ext.define('FinApp.view.main.MainController', {
         vm.set('refreshMs', FinApp.util.Api.defaultRefreshMs);
 
         Ext.on('piqapierror', me.onApiError, me);
+        // A simulated trade changes cash and positions: reload the portfolio totals.
+        Ext.on('piqtrade', me.loadPortfolios, me);
 
         // The task fires immediately, then every `interval` ms.
         me.runner = new Ext.util.TaskRunner();
@@ -61,6 +63,7 @@ Ext.define('FinApp.view.main.MainController', {
         var me = this;
 
         Ext.un('piqapierror', me.onApiError, me);
+        Ext.un('piqtrade', me.loadPortfolios, me);
 
         if (me.runner) {
             me.runner.destroy();

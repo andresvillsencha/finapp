@@ -6,7 +6,7 @@ PortfolioIQ is a **demonstration application** for sales demos and technical web
 
 The app has three screens in one shell: **Dashboard**, **Holdings Explorer** and **Portfolio Analytics**.
 
-> **Status:** implementation is phased (see `IMPLEMENTATION_PLAN.md`). The backend (Phase 1), the Ext JS shell (Phase 2) and the Dashboard (Phase 3) are implemented; Holdings Explorer and Analytics are placeholders. Sections marked *(planned)* describe behavior that is not built yet. This README is completed in the final phase.
+> **Status:** implementation is phased (see `IMPLEMENTATION_PLAN.md`). The backend (Phase 1), the Ext JS shell (Phase 2), the Dashboard (Phase 3) and the Holdings Explorer with the Trade Simulator (Phase 4, awaiting approval) are implemented; Portfolio Analytics is a placeholder. Sections marked *(planned)* describe behavior that is not built yet. This README is completed in the final phase.
 
 ## Technologies
 

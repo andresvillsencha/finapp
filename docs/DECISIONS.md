@@ -123,3 +123,54 @@ Claude cannot run Sencha Cmd, so the app was **not built or opened**. Checks don
 ### Not verified in Phase 3
 
 Claude cannot run Sencha Cmd, so the screen was **not built or opened**. Checks done: Ext classes and chart configs verified against the 8.0.0.43 sources; all frontend JS parses and is ES5; the controller's refresh logic (snapshot gating, scope change, coalescing, failure and retry) and the view-model formulas were exercised with a stub; and the real API was checked to contain every field the screen reads. Visual layout, chart rendering, tooltips and runtime behavior must be confirmed by the user.
+
+### Post-approval layout fixes in Phase 3
+
+Two layout fixes were applied after the user ran the Dashboard: the KPI cards are wrapped in a `piq-kpi-grid` element (a component's own element is not the flex container of its template content), and the performance chart uses `flex: 1` with `minHeight: 300` while the row uses `align: 'stretch'`, so it fills the card whatever the height of the allocation card.
+
+## Phase 4 — Holdings Explorer
+
+### Data mapping
+
+| Element | Source | Notes |
+|---|---|---|
+| Holdings grid | `GET /api/holdings` | `Ext.grid.Grid`, store `FinApp.store.Holdings`, **remote** sort, filter, paging (25 per page) and grouping |
+| Summary cards (Positions, Market Value, Unrealized P/L, Daily Change) | `meta.totals` of `/api/holdings` | Server sums over **every** row matching the filters, not only the page |
+| Group headers (count, market value, unrealized P/L) | `meta.groups` of `/api/holdings` | Server-calculated per group; the browser never adds money up |
+| Sector filter options | `GET /api/sector-allocation` | Only sectors that exist in the selected scope |
+| Company detail (description, facts) | `GET /api/companies` filtered by `id` | Fixture text from the server; cached per company |
+| Detail price chart (1M / 3M / 6M / 1Y) | `GET /api/companies/:id/prices` | Same deterministic function as spot prices and trades |
+| Recent transactions (detail panel) | `GET /api/transactions` filtered by portfolio and company | Five latest |
+| Transactions tab | `GET /api/transactions` | Filters: portfolio (shared selector), ticker, side, date range; paging; row expander with id, tick, fee, source |
+| Trade Simulator | `POST /api/transactions` with only `portfolio_id`, `company_id`, `trade_type`, `quantity` | The server sets price and time |
+| CSV export | `GET /api/exports/holdings.csv` | Same portfolio, filter, search, sort and group as the grid; all matching rows |
+
+### Backend additions (minimal, tested)
+
+1. **`group` / `groupDir` parameters** on `/api/holdings`. Ext sends the grid's grouper separately from `sort`. The server whitelists the groupable fields (`sector`, `portfolio_name`), accepts both `group=sector&groupDir=ASC` and the JSON-encoded sorter Ext sends by default, and orders the rows by the group first (the user's sort applies inside each group) so groups are contiguous across pages. Invalid input is `400 INVALID_GROUP`.
+2. **`meta.totals` and `meta.groups`** on `/api/holdings`: cent-exact sums over every row matching the filters (before paging). Totals and group buckets are required because a paged grid only holds one page; computing them in the browser would be wrong and would break the "no financial calculation in the UI" rule.
+3. **`query` parameter** on `/api/holdings`: free-text search over ticker, company, sector and industry (the same rule as `/api/companies`), because the filter protocol is AND-only and cannot express "ticker OR company". Allocation % keeps the whole portfolio scope as its denominator.
+4. `runCollectionQuery` also returns the filtered rows (`filtered`) for server-side totals. Three new backend tests (56 in total).
+
+### Frontend decisions
+
+1. **Why remote paging.** The specification asks for remote or client operations "consistent with dataset size"; the plan asks for remote paging. The Modern paging-toolbar plugin is slider based and aimed at infinite scrolling, so a small `piqpager` (previous / next and "Page x of y • N positions") drives the store's own `previousPage` / `nextPage`.
+2. **Portfolio filter = the shared selector.** The portfolio field in the filter bar is bound to the same `portfolioId` as the header selector, so there is one scope for Dashboard, Holdings and Transactions.
+3. **One snapshot per refresh.** Every request of a refresh carries the same `tick`. A new tick reloads only the holdings (current page, sort, filters, grouping, selection and scroll are kept) and the selected company's chart. A scope change starts over; a filter change returns to page 1.
+4. **Selection survives reloads.** The store's `beforeload` / `load` events bracket every reload; selection events fired by the reload itself are ignored and the selected position is re-selected silently with its fresh server values.
+5. **Trades.** The dialog posts four fields only and shows the server's rejection (insufficient cash or shares) inside the dialog. On success it fires the app-wide `piqtrade` event carrying the trade; the shell reloads the portfolio totals (cash), the Dashboard and Holdings reload, and each screen adopts the trade's `tick_index` so a screen pinned to an older tick can never hide the new trade.
+6. **The dialog does not calculate.** It shows the indicative price reported by the server for the latest tick and the portfolio's cash; it does not multiply quantity by price. The execution price and time appear in the confirmation toast, from the server response.
+7. **Accessible trade path.** Buy and Sell buttons in the filter bar and the detail panel are the primary route; double-tapping a row (Buy) is only a convenience. Sell is disabled until a position is selected.
+8. **CSV fallback.** The Exporter package is not installed; the server-side CSV (with formula-injection protection from Phase 1) is downloaded by navigating to the API URL (an attachment response). There is no Ext API for a plain file download.
+9. **States.** Grid loading text, empty text ("No holdings match the current filters."), an error banner with Retry (last data stays visible), server errors in the dialog, and em dashes for null percentages. Free text from the API is HTML-encoded in every template and renderer.
+
+### Mockup deviations (CLAUDE.md wins)
+
+- Summary cards show Positions, Market Value, Unrealized P/L and Daily Change from server totals. The mockup's "Cash Available" card and sparklines are not built (cash is shown in the Trade Simulator; sparklines are not in the specification).
+- Not built (not in the specification): the Asset Type filter, the "Top Movers (Today)" card, the header search box, row checkboxes and the per-row "…" menu, and the "Day Change" mini sparklines. The detail panel's "About" text comes from the fixtures; no logos or company branding are used.
+- Added what the mockup lacks: grouping by sector or portfolio with server-calculated group sums, the gain/loss filter, the Transactions tab with its filters and row details, and the CSV export.
+- The mockup's "Rows per page" selector is not built (fixed at 25 holdings / 15 transactions per page).
+
+### Not verified in Phase 4
+
+Claude cannot run Sencha Cmd, so the screen was **not built or opened**. Checks done: Ext classes and configs verified against the 8.0.0.43 sources; all frontend JS parses and is ES5; the controller (refresh rules, filters, grouping, selection, trade event, export URL), the view-model formulas and the trade controller were exercised with a stub; and every request the screen builds was sent to the real backend and the responses checked. Grid rendering, group header layout, the Dialog, charts and runtime behavior must be confirmed by the user. Risks to look at first: group headers (custom template reading server sums), the row expander, the filter-bar wrap layout, and the dialog's select fields.

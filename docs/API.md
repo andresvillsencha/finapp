@@ -1,4 +1,4 @@
-# PortfolioIQ API inventory (Phase 1)
+# PortfolioIQ API inventory
 
 Base path `/api`. **All data is simulated.** JSON only. Numbers are JSON numbers (dollars with up to 2 decimals unless noted); timestamps are ISO-8601 UTC.
 
@@ -31,7 +31,9 @@ Error (HTTP 400/404/409/500):
 | `tick` / `asOf` | Optional snapshot to reuse across related requests (not both; must not be in the future) |
 | `page`, `start`, `limit` | Paging (default 25, max 100) |
 | `sort` | `[{"property":"symbol","direction":"ASC"}]` (URL-encoded) or `sort=symbol&dir=ASC` |
-| `filter` | `[{"property":"sector","value":"Tech","operator":"like"}]` (URL-encoded). Operators: `= == === eq != ne < lt <= le > gt >= ge like in notin` |
+| `filter` | `[{"property":"sector","value":"Tech","operator":"like"}]` (URL-encoded). Operators: `= == === eq != ne < lt <= le > gt >= ge like in notin`. Several filters are combined with AND |
+| `group`, `groupDir` | Holdings only. `group=sector&groupDir=ASC` (or the JSON sorter object Ext sends by default). Groupable: `sector`, `portfolio_name`. Rows are ordered by the group first; the `sort` applies inside each group |
+| `query` | Holdings and companies: free-text search over ticker, company, sector and industry |
 
 ## Endpoints
 
@@ -46,13 +48,27 @@ Error (HTTP 400/404/409/500):
 | GET | `/api/sector-allocation?portfolioId` | `sector, market_value, allocation_pct, position_count` (cash excluded) |
 | GET | `/api/companies?query&page&start&limit&sort&filter` | Company directory with simulated quote |
 | GET | `/api/companies/:id/prices?range` | `timestamp, tick_index, price` series |
-| GET | `/api/holdings?portfolioId&page&start&limit&sort&filter` | Open positions with derived values |
+| GET | `/api/holdings?portfolioId&page&start&limit&sort&filter&group&groupDir&query` | Open positions with derived values; `meta.totals` and `meta.groups` hold server sums |
 | GET | `/api/transactions?portfolioId&page&start&limit&sort&filter` | Transaction history (filters: portfolio, ticker, side, date range) |
 | POST | `/api/transactions` | Execute a simulated BUY/SELL (201) |
 | GET | `/api/analytics/pivot?portfolioId` | Flat position rows: sector, company, portfolio, market value, cost basis, unrealized P/L |
 | GET | `/api/analytics/comparison?range` | Normalized series (start = 100): `portfolio_<id>` and `benchmark_<id>` fields; `meta.series` describes them |
 | GET | `/api/analytics/sector-comparison` | One row per sector with `portfolio_<id>` (value) and `portfolio_<id>_pct` fields |
 | GET | `/api/exports/holdings.csv?portfolioId&filter&sort` | CSV of all matching holdings (text cells protected against formula injection) |
+
+### Holdings totals and groups (`meta`)
+
+`meta.totals` and `meta.groups` are calculated by the server over **every row matching the filters** (before paging), in exact cents, so a paged grid never has to add values up:
+
+```json
+"totals": { "count": 75, "market_value": 4210032.5, "cost_basis": 3990000, "unrealized_pl": 220032.5,
+             "unrealized_pl_pct": 5.5148, "daily_pl": 1843.2 },
+"groups": { "sector": { "Technology": { "count": 12, "market_value": 0, "cost_basis": 0, "unrealized_pl": 0,
+                                        "unrealized_pl_pct": null, "daily_pl": 0 } },
+            "portfolio_name": { "Technology Growth": { } } }
+```
+
+`unrealized_pl_pct` is `null` when the cost basis is zero.
 
 ### Holdings row
 
@@ -93,4 +109,4 @@ Response `201`:
 
 ### Error codes
 
-`INVALID_JSON, PAYLOAD_TOO_LARGE, INVALID_TRADE, INVALID_TRADE_TYPE, INVALID_QUANTITY, INVALID_PORTFOLIO_ID, INVALID_COMPANY_ID, INVALID_RANGE, INVALID_PAGING, INVALID_SORTER, INVALID_FILTER, INVALID_TICK, INVALID_AS_OF, INVALID_SNAPSHOT, TICK_OUT_OF_RANGE, AS_OF_OUT_OF_RANGE` (400); `PORTFOLIO_NOT_FOUND, COMPANY_NOT_FOUND, ROUTE_NOT_FOUND` (404); `INSUFFICIENT_CASH, INSUFFICIENT_SHARES, OUT_OF_ORDER_TRANSACTION, TRADING_DISABLED, PORTFOLIO_NOT_ACTIVE` (409); `PERSISTENCE_FAILED, INTERNAL_ERROR` (500).
+`INVALID_JSON, PAYLOAD_TOO_LARGE, INVALID_TRADE, INVALID_TRADE_TYPE, INVALID_QUANTITY, INVALID_PORTFOLIO_ID, INVALID_COMPANY_ID, INVALID_RANGE, INVALID_PAGING, INVALID_SORTER, INVALID_GROUP, INVALID_FILTER, INVALID_TICK, INVALID_AS_OF, INVALID_SNAPSHOT, TICK_OUT_OF_RANGE, AS_OF_OUT_OF_RANGE` (400); `PORTFOLIO_NOT_FOUND, COMPANY_NOT_FOUND, ROUTE_NOT_FOUND` (404); `INSUFFICIENT_CASH, INSUFFICIENT_SHARES, OUT_OF_ORDER_TRANSACTION, TRADING_DISABLED, PORTFOLIO_NOT_ACTIVE` (409); `PERSISTENCE_FAILED, INTERNAL_ERROR` (500).

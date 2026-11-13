@@ -86,6 +86,46 @@ function parseSorters(rawSort, rawDir, sortable) {
     });
 }
 
+/**
+ * Ext JS sends the grid's grouper as its own `group` parameter. With simpleGroupMode
+ * it is `group=sector&groupDir=ASC`; the default encoding is a JSON sorter object.
+ * Returns { property, direction } or null. Only `groupable` fields are accepted.
+ * The server must return the rows ordered by the group first, so that the store
+ * can lay out contiguous groups.
+ */
+function parseGroup(rawGroup, rawDir, groupable) {
+    if (rawGroup === undefined || rawGroup === '') {
+        return null;
+    }
+    let property;
+    let direction = rawDir;
+    if (typeof rawGroup !== 'string') {
+        throw badRequest('INVALID_GROUP', 'Parameter "group" is invalid.');
+    }
+    const text = rawGroup.trim();
+    if (text.startsWith('[') || text.startsWith('{')) {
+        let item = parseJson('group', rawGroup, 'INVALID_GROUP');
+        if (Array.isArray(item)) {
+            item = item[0];
+        }
+        if (!item || typeof item !== 'object' || typeof item.property !== 'string') {
+            throw badRequest('INVALID_GROUP', 'The group needs a "property".');
+        }
+        property = item.property;
+        direction = item.direction || direction;
+    } else {
+        property = text;
+    }
+    if (!groupable || !groupable.has(property)) {
+        throw badRequest('INVALID_GROUP', `Cannot group by "${property}".`);
+    }
+    direction = String(direction || 'ASC').toUpperCase();
+    if (direction !== 'ASC' && direction !== 'DESC') {
+        throw badRequest('INVALID_GROUP', 'Group direction must be ASC or DESC.');
+    }
+    return { property, direction };
+}
+
 function toNumber(raw, property) {
     const value = typeof raw === 'number' ? raw : (typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN);
     if (!Number.isFinite(value)) {
@@ -283,20 +323,27 @@ function parsePaging(query, settings) {
  * matching the filters BEFORE pagination.
  */
 function runCollectionQuery(rows, query, options) {
-    const { schema, sortable, settings, defaultSort = [], tieBreak, paged = true } = options;
+    const { schema, sortable, settings, defaultSort = [], tieBreak, paged = true, groupable } = options;
     const filters = parseFilters(query.filter, schema);
     const requested = parseSorters(query.sort, query.dir, sortable);
-    const sorters = requested.length > 0 ? requested : defaultSort;
+    const group = parseGroup(query.group, query.groupDir, groupable);
+    let sorters = requested.length > 0 ? requested : defaultSort;
+    if (group) {
+        // The group is the primary ordering; the user's sort applies inside each group.
+        sorters = [group, ...sorters.filter((s) => s.property !== group.property)];
+    }
     const filtered = applyFilters(rows, filters);
     const sorted = applySorters(filtered, sorters, tieBreak);
     if (!paged) {
-        return { data: sorted, total: sorted.length, paging: null };
+        return { data: sorted, total: sorted.length, paging: null, filtered: sorted };
     }
     const paging = parsePaging(query, settings);
     return {
         data: sorted.slice(paging.offset, paging.offset + paging.limit),
         total: sorted.length,
-        paging
+        paging,
+        // Every row matching the filters (before paging), used for server-side totals.
+        filtered: sorted
     };
 }
 
@@ -304,6 +351,7 @@ module.exports = {
     parseSorters,
     parseFilters,
     parsePaging,
+    parseGroup,
     applyFilters,
     applySorters,
     runCollectionQuery,

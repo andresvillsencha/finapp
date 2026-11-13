@@ -7,12 +7,16 @@ const holdings = require('../services/holdingsService');
 module.exports = (ctx) => ({
     list(req, res) {
         const snapshot = resolveSnapshot(ctx, req.query);
-        const { data, total, paging, scope } = holdings.queryHoldings(ctx, snapshot, req.query);
+        const { data, total, paging, scope, summary } = holdings.queryHoldings(ctx, snapshot, req.query);
         return sendCollection(res, data, total, snapshotMeta(snapshot, {
             portfolioId: scope.id,
             start: paging.offset,
             limit: paging.limit,
-            allocationBasis: 'EQUITY_MARKET_VALUE_EXCLUDING_CASH'
+            allocationBasis: 'EQUITY_MARKET_VALUE_EXCLUDING_CASH',
+            // Totals over every row matching the filters (not only this page), so the
+            // browser never has to add up values itself.
+            totals: summary.totals,
+            groups: summary.groups
         }));
     },
 

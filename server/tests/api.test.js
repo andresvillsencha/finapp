@@ -494,3 +494,82 @@ test('startup refuses a corrupt journal instead of overwriting it', async () => 
     }]));
     await assert.rejects(() => startServer({ runtimeDir: bad }), /inconsistent/);
 });
+
+test('holdings: group parameter orders rows by group; totals and group summaries cover all filtered rows', async (t) => {
+    const s = await server(t);
+    const tick = (await s.get('/simulation/status')).json.data.tick_index;
+    const base = `/holdings?portfolioId=all&tick=${tick}`;
+
+    // Grouped + paged: contiguous groups, page 1 and page 2 continue the same ordering.
+    const p1 = await s.get(`${base}&limit=20&start=0&group=sector&groupDir=ASC`);
+    const p2 = await s.get(`${base}&limit=20&start=20&group=sector&groupDir=ASC`);
+    const sectors = [...p1.json.data, ...p2.json.data].map((r) => r.sector);
+    assert.deepEqual(sectors, sectors.slice().sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())),
+        'rows are ordered by sector across pages');
+
+    // The JSON-encoded sorter form that Ext JS sends by default is accepted too.
+    const encoded = await s.get(`${base}&limit=5&group=${q({ property: 'portfolio_name', direction: 'DESC' })}`);
+    const names = encoded.json.data.map((r) => r.portfolio_name);
+    assert.deepEqual(names, names.slice().sort().reverse());
+
+    // The user's sort applies inside each group.
+    const inner = await s.get(`${base}&limit=100&group=sector&sort=${q([{ property: 'market_value', direction: 'DESC' }])}`);
+    for (let i = 1; i < inner.json.data.length; i++) {
+        const a = inner.json.data[i - 1];
+        const b = inner.json.data[i];
+        if (a.sector === b.sector) {
+            assert.ok(a.market_value >= b.market_value, 'descending market value within a sector');
+        }
+    }
+
+    // Totals cover ALL rows matching the filters, not just the requested page, and are cent-exact.
+    const all = (await s.get(`${base}&limit=100`)).json.data;
+    const sum = (rows, key) => rows.reduce((acc, r) => acc + cents(r[key]), 0);
+    const meta = p1.json.meta;
+    assert.equal(meta.totals.count, all.length);
+    assert.equal(cents(meta.totals.market_value), sum(all, 'market_value'));
+    assert.equal(cents(meta.totals.cost_basis), sum(all, 'cost_basis'));
+    assert.equal(cents(meta.totals.unrealized_pl), sum(all, 'unrealized_pl'));
+    assert.equal(cents(meta.totals.unrealized_pl), cents(meta.totals.market_value) - cents(meta.totals.cost_basis));
+    for (const sector of new Set(all.map((r) => r.sector))) {
+        const rows = all.filter((r) => r.sector === sector);
+        assert.equal(meta.groups.sector[sector].count, rows.length);
+        assert.equal(cents(meta.groups.sector[sector].market_value), sum(rows, 'market_value'));
+    }
+    assert.deepEqual(Object.keys(meta.groups.portfolio_name).sort(),
+        [...new Set(all.map((r) => r.portfolio_name))].sort());
+
+    // Totals follow the filters.
+    const tech = await s.get(`${base}&limit=5&filter=${q([{ property: 'sector', value: 'Technology', operator: '=' }])}`);
+    assert.equal(tech.json.meta.totals.count, tech.json.total);
+    assert.equal(cents(tech.json.meta.totals.market_value), sum(all.filter((r) => r.sector === 'Technology'), 'market_value'));
+
+    // An empty result has zero totals and a null percentage.
+    const none = await s.get(`${base}&filter=${q([{ property: 'symbol', value: 'zzzz' }])}`);
+    assert.equal(none.json.meta.totals.count, 0);
+    assert.equal(none.json.meta.totals.market_value, 0);
+    assert.equal(none.json.meta.totals.unrealized_pl_pct, null);
+
+    assertError(await s.get('/holdings?group=symbol'), 400, 'INVALID_GROUP');
+    assertError(await s.get('/holdings?group=sector&groupDir=sideways'), 400, 'INVALID_GROUP');
+    assertError(await s.get('/holdings?group=%7Bbad'), 400, 'INVALID_GROUP');
+});
+
+test('holdings: free-text query matches ticker or company; totals and CSV follow it', async (t) => {
+    const s = await server(t);
+    const tick = (await s.get('/simulation/status')).json.data.tick_index;
+    const all = (await s.get(`/holdings?portfolioId=all&limit=100&tick=${tick}`)).json.data;
+    const byTicker = await s.get(`/holdings?portfolioId=all&limit=100&tick=${tick}&query=msft`);
+    assert.ok(byTicker.json.total > 0);
+    assert.ok(byTicker.json.data.every((r) => r.symbol === 'MSFT'));
+    const byName = await s.get(`/holdings?portfolioId=all&limit=100&tick=${tick}&query=${encodeURIComponent('Microsoft')}`);
+    assert.equal(byName.json.total, byTicker.json.total);
+    assert.equal(byTicker.json.meta.totals.count, byTicker.json.total);
+    // Allocation % keeps the whole scope as its denominator.
+    const full = all.find((r) => r.id === byTicker.json.data[0].id);
+    assert.equal(byTicker.json.data[0].allocation_pct, full.allocation_pct);
+    const csv = await s.get(`/exports/holdings.csv?portfolioId=all&tick=${tick}&query=msft`);
+    const lines = csv.text.trim().split('\r\n');
+    assert.equal(lines.length - 1, byTicker.json.total, 'CSV rows = matching holdings');
+    assert.equal((await s.get(`/holdings?query=zzzzzz`)).json.total, 0);
+});

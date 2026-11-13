@@ -31,6 +31,7 @@ Ext.define('FinApp.view.dashboard.DashboardController', {
             vm = me.getViewModel();
 
         Ext.on('piqsnapshot', me.onSnapshot, me);
+        Ext.on('piqtrade', me.onTrade, me);
 
         // Fire whenever the shared portfolio selection, the range or the visible
         // screen changes (and once at start).
@@ -41,7 +42,25 @@ Ext.define('FinApp.view.dashboard.DashboardController', {
 
     destroy: function () {
         Ext.un('piqsnapshot', this.onSnapshot, this);
+        Ext.un('piqtrade', this.onTrade, this);
         this.callParent();
+    },
+
+    /**
+     * A simulated trade was executed: the KPIs, chart and allocation of the SAME tick
+     * changed, so forget what is shown and reload (now, or when the screen is next shown).
+     */
+    onTrade: function (trade) {
+        // The trade executed at the server's latest tick: never show an older snapshot
+        // (it would not include the trade yet).
+        if (trade && Ext.isNumber(trade.tick_index) &&
+            (!Ext.isNumber(this.latestTick) || trade.tick_index > this.latestTick)) {
+            this.latestTick = trade.tick_index;
+        }
+
+        this.loadedTick = null;
+        this.loadedKey = null;
+        this.refresh();
     },
 
     // ---- triggers -----------------------------------------------------------
@@ -49,7 +68,9 @@ Ext.define('FinApp.view.dashboard.DashboardController', {
     onSnapshot: function (snapshot) {
         // The event carries the newest tick; use it directly instead of waiting for
         // the shared view model value to propagate into this view model.
-        if (snapshot && Ext.isNumber(snapshot.tickIndex)) {
+        // Ticks only move forward (a slow status response must not move us back).
+        if (snapshot && Ext.isNumber(snapshot.tickIndex) &&
+            (!Ext.isNumber(this.latestTick) || snapshot.tickIndex > this.latestTick)) {
             this.latestTick = snapshot.tickIndex;
         }
 

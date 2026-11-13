@@ -22,6 +22,50 @@ const HOLDINGS_SCHEMA = {
     cost_basis: NUMBER, unrealized_pl: NUMBER, unrealized_pl_pct: NUMBER, allocation_pct: NUMBER
 };
 const HOLDINGS_SORTABLE = new Set([...Object.keys(HOLDINGS_SCHEMA), 'id']);
+const HOLDINGS_GROUPABLE = new Set(['sector', 'portfolio_name']);
+
+const toCents = (dollars) => Math.round(dollars * 100);
+
+/** Exact (cent-based) totals of a set of holdings rows, for footers and group headers. */
+function summarize(rows) {
+    let marketValue = 0;
+    let costBasis = 0;
+    let unrealized = 0;
+    let dailyPl = 0;
+    for (const r of rows) {
+        marketValue += toCents(r.market_value);
+        costBasis += toCents(r.cost_basis);
+        unrealized += toCents(r.unrealized_pl);
+        dailyPl += toCents(r.daily_pl);
+    }
+    return {
+        count: rows.length,
+        market_value: usd(marketValue),
+        cost_basis: usd(costBasis),
+        unrealized_pl: usd(unrealized),
+        unrealized_pl_pct: pct(unrealized, costBasis),
+        daily_pl: usd(dailyPl)
+    };
+}
+
+/** Totals over ALL rows matching the filters (not just the current page) and per group. */
+function summaries(filtered) {
+    const groups = {};
+    for (const field of HOLDINGS_GROUPABLE) {
+        const buckets = new Map();
+        for (const row of filtered) {
+            if (!buckets.has(row[field])) {
+                buckets.set(row[field], []);
+            }
+            buckets.get(row[field]).push(row);
+        }
+        groups[field] = {};
+        for (const [name, list] of buckets) {
+            groups[field][name] = summarize(list);
+        }
+    }
+    return { totals: summarize(filtered), groups };
+}
 
 /** Position DTOs (dollars) for every portfolio in the scope. */
 function holdingRows(ctx, view, scope) {
@@ -65,16 +109,24 @@ function holdingRows(ctx, view, scope) {
 function queryHoldings(ctx, snapshot, query, { paged = true } = {}) {
     const scope = resolveScope(ctx, query.portfolioId);
     const view = buildView(ctx, snapshot);
-    const rows = holdingRows(ctx, view, scope);
+    let rows = holdingRows(ctx, view, scope);
+    // Free-text search over ticker, company, sector and industry (like /api/companies).
+    // Allocation % was already computed against the whole scope above.
+    if (query.query !== undefined && String(query.query).trim() !== '') {
+        const needle = String(query.query).trim().toLowerCase();
+        rows = rows.filter((r) => [r.symbol, r.company, r.sector, r.industry]
+            .some((field) => String(field).toLowerCase().includes(needle)));
+    }
     const result = runCollectionQuery(rows, query, {
         schema: HOLDINGS_SCHEMA,
         sortable: HOLDINGS_SORTABLE,
         settings: ctx.settings,
         defaultSort: [{ property: 'market_value', direction: 'DESC' }],
         tieBreak: 'id',
+        groupable: HOLDINGS_GROUPABLE,
         paged
     });
-    return { ...result, scope };
+    return { ...result, scope, summary: summaries(result.filtered) };
 }
 
 const CSV_COLUMNS = [
@@ -98,4 +150,4 @@ function exportHoldingsCsv(ctx, snapshot, query) {
     return toCsv(CSV_COLUMNS, data);
 }
 
-module.exports = { holdingRows, queryHoldings, exportHoldingsCsv, HOLDINGS_SCHEMA };
+module.exports = { holdingRows, queryHoldings, exportHoldingsCsv, summarize, HOLDINGS_SCHEMA };

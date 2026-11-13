@@ -1,0 +1,271 @@
+/*
+ * Styling of the Holdings Explorer (FinApp.view.holdings.HoldingsView) and the Trade
+ * Simulator dialog. Namespaced `.piq-*`; the palette is documented in Application.scss.
+ * The summary cards reuse the `.piq-kpi*` rules of the Dashboard.
+ */
+
+.piq-holdings {
+    padding-bottom: 32px;
+}
+
+// ---- filter bar -----------------------------------------------------------------
+
+.piq-filterbar {
+    margin-top: 4px;
+}
+
+.piq-group-by {
+    margin: 0 8px 8px 0;
+}
+
+// ---- tabs, grids -----------------------------------------------------------------
+
+.piq-holdings-tabs.piq-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+.piq-grid {
+    border: 0;
+    font-variant-numeric: tabular-nums;
+
+    .piq-ticker {
+        font-weight: 700;
+        color: #0b1f4d;
+    }
+}
+
+// group header row: name on the left, server-calculated sums on the right
+.piq-grp {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 13px;
+    color: #0b1f4d;
+
+    .piq-grp-name {
+        font-weight: 700;
+
+        i {
+            margin-left: 6px;
+            font-style: normal;
+            font-weight: 400;
+            color: #5b6b8c;
+        }
+    }
+
+    .piq-grp-sum {
+        color: #475569;
+    }
+}
+
+.piq-txfilters {
+    padding: 12px 16px 0;
+}
+
+.piq-txdetail {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 8px 16px;
+    font-size: 12px;
+    color: #475569;
+
+    span {
+        margin-right: 24px;
+    }
+}
+
+// ---- paging bar ----------------------------------------------------------------------
+
+.piq-pager {
+    border-top: 1px solid #e3e9f2;
+
+    .piq-pager-text {
+        padding: 0 12px;
+        font-size: 13px;
+        color: #5b6b8c;
+    }
+}
+
+// ---- buy / sell tags ------------------------------------------------------------------
+
+.piq-side-tag {
+    display: inline-block;
+    min-width: 44px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.3px;
+
+    &.piq-side-buy {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    &.piq-side-sell {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+}
+
+// ---- detail panel ----------------------------------------------------------------------
+
+.piq-detail {
+    // the card margin comes from .piq-card.piq-dash-card
+    min-height: 200px;
+}
+
+.piq-detail-empty {
+    padding: 40px 12px;
+    line-height: 2;
+
+    .x-fa {
+        font-size: 28px;
+        color: #9db3d8;
+    }
+}
+
+.piq-detail-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.piq-detail-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0b1f4d;
+}
+
+.piq-detail-sub {
+    margin-top: 2px;
+    font-size: 12px;
+    color: #5b6b8c;
+}
+
+.piq-chip {
+    flex: none;
+    margin-left: 8px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: #e8f0fe;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1d5fd1;
+}
+
+.piq-detail-price {
+    margin: 14px 0 8px;
+}
+
+.piq-detail-big {
+    font-size: 26px;
+    font-weight: 700;
+    color: #0b1f4d;
+    font-variant-numeric: tabular-nums;
+}
+
+.piq-kvtable {
+    width: 100%;
+    margin-bottom: 8px;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+
+    td {
+        padding: 6px 0;
+        border-bottom: 1px solid #f0f3f8;
+        color: #5b6b8c;
+    }
+
+    td + td {
+        text-align: right;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    td.piq-pos {
+        color: #15803d;
+    }
+
+    td.piq-neg {
+        color: #b91c1c;
+    }
+}
+
+.piq-small-title {
+    margin: 12px 0 6px;
+    font-size: 14px;
+}
+
+.piq-recent-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f3f8;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+
+    .piq-recent-main {
+        flex: 1;
+        margin-left: 10px;
+        color: #1e293b;
+    }
+
+    .piq-recent-date {
+        color: #5b6b8c;
+        font-size: 12px;
+    }
+}
+
+.piq-about {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #334155;
+
+    p {
+        margin: 0 0 6px;
+    }
+}
+
+.piq-muted {
+    color: #5b6b8c;
+}
+
+// ---- Trade Simulator dialog --------------------------------------------------------------
+
+.piq-trade {
+    .piq-trade-note {
+        margin-bottom: 12px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: #5b6b8c;
+    }
+
+    .piq-side {
+        margin-bottom: 8px;
+    }
+
+    .piq-trade-info {
+        margin-top: 8px;
+        font-size: 13px;
+        color: #334155;
+    }
+
+    .piq-trade-error {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border: 1px solid #f5c2c2;
+        border-radius: 8px;
+    }
+}
+
+@media (max-width: 1000px) {
+    .piq-holdings-tabs.piq-card {
+        flex-basis: 100%;
+    }
+}
